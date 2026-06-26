@@ -1,0 +1,14 @@
+# Google Apps Script server-side files – not deployed to GitHub Pages
+*.gs
+
+# IDE artefacts
+.idea/
+.vscode/
+*.iml
+
+# Node modules (if you ever add a bundler later)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
