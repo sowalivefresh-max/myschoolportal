@@ -1,5 +1,5 @@
-# Google Apps Script server-side files – not deployed to GitHub Pages
-*.gs
+# Google Apps Script server-side files – tracked for full backup & version history
+# (Remove *.gs exclusion so Code.gs, Finance.gs, etc. are committed to the repository)
 
 # IDE artefacts
 .idea/

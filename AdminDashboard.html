@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -15,8 +15,9 @@
       <div class="aa-sidebar-brand">
         <div class="aa-brand-icon">AA</div>
         <div class="aa-brand-text">
-          <div class="aa-brand-name" id="sb-school-name">Loading\u2026</div>
+          <div class="aa-brand-name" id="sb-school-name">Loading…</div>
           <div class="aa-brand-role">Administrator</div>
+          <div id="sb-plan-badge" style="display:inline-block;margin-top:5px;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(240,165,0,0.15);color:#f0a500;border:1px solid rgba(240,165,0,0.3);letter-spacing:.5px;text-transform:uppercase;"></div>
         </div>
       </div>
       <nav class="aa-nav">
@@ -138,7 +139,7 @@
               </div>
               <div class="aa-card-body">
                 <div class="aa-grid-2">
-                  <button class="aa-btn aa-btn-outline w-100" onclick="openModal('userModal');resetForm('userForm')"><i class="fa fa-plus"></i> Add User</button>
+                  <button class="aa-btn aa-btn-outline w-100" onclick="openModal('userModal');resetForm('userForm');applyInstitutionFilter(institutionType);"><i class="fa fa-plus"></i> Add User</button>
                   <button class="aa-btn aa-btn-outline w-100" onclick="openModal('studentModal');resetForm('studentForm');document.getElementById('studentPhotoPreview').innerHTML='<i class=\'fa fa-user\' style=\'color:#aaa;\'></i>';document.getElementById('studentPhotoBase64').value='';"><i class="fa fa-plus"></i> Add Student</button>
                   <button class="aa-btn aa-btn-outline w-100" onclick="openModal('classModal');resetForm('classForm')"><i class="fa fa-plus"></i> Add Class</button>
                   <button class="aa-btn aa-btn-outline w-100" onclick="openModal('subjectModal');resetForm('subjectForm')"><i class="fa fa-plus"></i> Add Subject</button>
@@ -464,6 +465,25 @@
                       <input type="hidden" name="class_teacher_signature" id="ctSigBase64">
                     </div>
                   </div>
+                </div>
+
+                <div class="aa-form-group">
+                  <label class="aa-label">Institution Type</label>
+                  <select name="institution_type" class="aa-select">
+                    <option value="both">Dual-Section (Primary &amp; High School)</option>
+                    <option value="primary">Primary School Only</option>
+                    <option value="secondary">Secondary / High School Only</option>
+                  </select>
+                  <small class="text-muted" style="font-size:11px;display:block;margin-top:4px;">This controls which sections appear in menus, forms, and lists across the portal.</small>
+                </div>
+
+                <div class="aa-form-group">
+                  <label class="aa-label">Subscription Plan</label>
+                  <select name="subscription_plan" class="aa-select">
+                    <option value="basic">Basic Plan</option>
+                    <option value="standard">Standard Plan</option>
+                    <option value="deluxe">Deluxe Plan</option>
+                  </select>
                 </div>
 
                 <button type="submit" class="aa-btn aa-btn-primary w-100">Save Settings</button>
@@ -907,6 +927,7 @@
     var globalSubjects = [];
     var currentTerm = '';
     var currentSession = '';
+    var institutionType = 'both'; // 'both' | 'primary' | 'secondary'
     
     document.addEventListener('DOMContentLoaded', function() {
       initTabs('admin-tabs');
@@ -932,7 +953,12 @@
     }
 
     function populateTeacherDropdowns() {
-      var teachers = globalUsers.filter(function(u){ return (u.role === 'teacher' || u.role === 'primary_teacher') && (u.id || u.iD); });
+      var teachers = globalUsers.filter(function(u) {
+        if (!(u.role === 'teacher' || u.role === 'primary_teacher') || !(u.id || u.iD)) return false;
+        if (institutionType === 'primary') return u.role === 'primary_teacher' || u.section === 'primary' || u.section === 'both';
+        if (institutionType === 'secondary') return u.role === 'teacher' || u.section === 'high' || u.section === 'both';
+        return true;
+      });
       var options = '<option value="">Select Teacher</option>';
       teachers.forEach(function(t){ options += '<option value="'+(t.id || t.iD)+'">'+t.fullName+'</option>'; });
       document.getElementById('classTeacherSelect').innerHTML = options;
@@ -940,8 +966,13 @@
     }
 
     function populateClassDropdowns() {
+      var filteredClasses = globalClasses.filter(function(c) {
+        if (institutionType === 'primary') return c.section === 'primary' || !c.section;
+        if (institutionType === 'secondary') return c.section === 'high' || c.section === 'highschool' || !c.section;
+        return true;
+      });
       var options = '<option value="">Select Class</option>';
-      globalClasses.forEach(function(c){ options += '<option value="'+c.className+'">'+c.className+'</option>'; });
+      filteredClasses.forEach(function(c){ options += '<option value="'+c.className+'">'+c.className+'</option>'; });
       document.getElementById('studentClassSelect').innerHTML = options;
       document.getElementById('subjectClassSelect').innerHTML = '<option value="">All Classes</option>' + options;
     }
@@ -958,7 +989,67 @@
         currentTerm = s.current_term || '';
         currentSession = s.current_session || '';
         document.getElementById('currentTermText').textContent = currentTerm + ' ' + currentSession;
-        if(s.school_name) document.getElementById('sb-school-name').textContent = s.school_name;
+        if (s.school_name) document.getElementById('sb-school-name').textContent = s.school_name;
+
+        // --- Plan badge ---
+        var planNames = { basic: 'Basic Plan', standard: 'Standard Plan', deluxe: 'Deluxe Plan' };
+        var planColors = { basic: 'rgba(100,180,255,0.15);color:#60a5fa;border-color:rgba(100,180,255,0.35)', standard: 'rgba(100,220,150,0.15);color:#4ade80;border-color:rgba(100,220,150,0.35)', deluxe: 'rgba(240,165,0,0.15);color:#f0a500;border-color:rgba(240,165,0,0.3)' };
+        var activePlan = (s.subscription_plan || 'basic').toLowerCase();
+        var badge = document.getElementById('sb-plan-badge');
+        if (badge) {
+          badge.textContent = planNames[activePlan] || 'Basic Plan';
+          var pc = planColors[activePlan] || planColors.basic;
+          badge.style.cssText = 'display:inline-block;margin-top:5px;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:' + pc.split(';color:')[0] + ';color:' + pc.split(';color:')[1].split(';')[0] + ';border:1px solid ' + pc.split('border-color:')[1] + ';';
+        }
+
+        // --- Institution type filter ---
+        institutionType = (s.institution_type || 'both').toLowerCase();
+        applyInstitutionFilter(institutionType);
+      });
+    }
+
+    /**
+     * Applies institution-type filtering across the admin UI:
+     * - Hides/shows section selectors in forms
+     * - Filters class, student, subject dropdowns
+     * - Hides irrelevant roles from user creation form
+     */
+    function applyInstitutionFilter(type) {
+      var isPrimaryOnly = (type === 'primary');
+      var isSecondaryOnly = (type === 'secondary');
+      var isSingleSection = isPrimaryOnly || isSecondaryOnly;
+
+      // Roles available per section type
+      var primaryRoles   = ['primary_teacher', 'headteacher', 'parent', 'admin', 'admin_assistant', 'accounts'];
+      var secondaryRoles = ['teacher', 'principal', 'vp', 'parent', 'admin', 'admin_assistant', 'accounts'];
+      var bothRoles      = ['teacher', 'primary_teacher', 'principal', 'vp', 'headteacher', 'accounts', 'parent', 'admin', 'admin_assistant', 'external'];
+
+      var allowedRoles = isSingleSection ? (isPrimaryOnly ? primaryRoles : secondaryRoles) : bothRoles;
+
+      // Filter the role select in user creation modal
+      var roleSelect = document.querySelector('#userForm select[name="role"]');
+      if (roleSelect) {
+        Array.from(roleSelect.options).forEach(function(opt) {
+          opt.style.display = (allowedRoles.indexOf(opt.value) !== -1 || opt.value === '') ? '' : 'none';
+        });
+        // If current selection is now hidden, reset to first valid option
+        if (allowedRoles.indexOf(roleSelect.value) === -1) {
+          roleSelect.value = allowedRoles[0] || 'teacher';
+        }
+      }
+
+      // Section selects in forms: lock when single-section
+      var sectionSelects = document.querySelectorAll('select[name="section"]');
+      sectionSelects.forEach(function(sel) {
+        if (isSingleSection) {
+          var lockVal = isPrimaryOnly ? 'primary' : 'high';
+          sel.value = lockVal;
+          sel.disabled = true;
+          sel.title = 'Locked by Institution Type setting';
+        } else {
+          sel.disabled = false;
+          sel.title = '';
+        }
       });
     }
 
@@ -1017,6 +1108,7 @@
       setFormData('userForm', u);
       document.getElementById('userSigPreview').innerHTML = u.signature ? '<img src="'+u.signature+'" style="width:100%;height:100%;object-fit:contain;">' : '<i class="fa fa-signature text-muted"></i>';
       openModal('userModal');
+      applyInstitutionFilter(institutionType);
     }
     function saveUser() {
       var data = getFormData('userForm');
