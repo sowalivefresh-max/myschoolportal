@@ -412,7 +412,16 @@ function getPlanLevel() {
  * Throws a descriptive error if the current plan is below the required minimum.
  * @param {string} minPlan - 'basic' | 'standard' | 'deluxe' | 'super_deluxe'
  */
-function requirePlan(minPlan) {
+function requirePlan(minPlan, token) {
+  if (token) {
+    try {
+      var s = validateSession(token);
+      if (s && s.role === 'developer') return; // Developers bypass all plan limits
+    } catch(e) {
+      // Ignore invalid token here, it will be caught by requireRole
+    }
+  }
+
   var current = getPlanLevel();
   var required = PLAN_LEVELS[minPlan] || 1;
   if (current < required) {
@@ -428,7 +437,14 @@ function requirePlan(minPlan) {
 // ─── ADMIN ENDPOINTS ─────────────────────────────────────────
 
 function adminGetStats(token) { requireRole(token,['admin','admin_assistant']); return getAdminStats(); }
-function adminGetUsers(token) { requireRole(token,['admin','admin_assistant']); return getAllUsers(); }
+function adminGetUsers(token) { 
+  var s = requireRole(token,['admin','admin_assistant']); 
+  var users = getAllUsers();
+  if (s.role !== 'developer') {
+    users = users.filter(function(u) { return u.role !== 'developer'; });
+  }
+  return users;
+}
 function adminCreateUser(token, data) { 
   var s = requireRole(token,['admin','admin_assistant']); 
   if (data.role === 'developer' && s.role !== 'developer') throw new Error('Security Error: Only developers can create developer accounts.');
@@ -448,7 +464,7 @@ function adminResetUserPassword(token, uid) {
   return updateUser(uid, { password: 'password123' }); 
 }
 function adminImpersonateUser(token, targetUserId) {
-  requirePlan('standard');
+  requirePlan('standard', token);
   var s = requireRole(token, 'admin');
   var users = getSheetData('Users');
   var targetUser = users.find(function(u) { return String(u.id || u.iD) === String(targetUserId); });
@@ -524,7 +540,7 @@ function adminUpdateSettings(token, data) {
 function adminGetScores(token, filters) { requireRole(token,['admin','admin_assistant']); return getScores(filters); }
 function adminLockScores(token, filters) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('LOCK_SCORES', filters, s.userId); return lockScores(filters); }
 function adminUnlockScores(token, filters) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('UNLOCK_SCORES', filters, s.userId); return unlockScores(filters); }
-function adminGetAuditLogs(token) { requirePlan('deluxe'); requireRole(token,['admin','admin_assistant']); return getSheetData('AuditLogs'); }
+function adminGetAuditLogs(token) { requirePlan('deluxe', token); requireRole(token,['admin','admin_assistant']); return getSheetData('AuditLogs'); }
 function adminEnrollStudent(token, sid, subId, sess, term) { 
   var s = requireRole(token,['admin','admin_assistant']); 
   var currentSettings = getSettings();
@@ -540,29 +556,29 @@ function adminUnenrollStudent(token, sid, subId, sess) {
   if (s.role === 'admin_assistant') return logPendingTask('UNENROLL_STUDENT', {sid:sid, subId:subId, sess:sess}, s.userId); 
   return unenrollStudent(sid, subId, sess); 
 }
-function adminGetPayments(token, filters) { requirePlan('deluxe'); requireRole(token,'admin'); return getAllPayments(filters); }
-function adminGetBills(token, filters) { requirePlan('deluxe'); requireRole(token,'admin'); return getAllBills(filters); }
-function adminGetFeeStructures(token) { requirePlan('deluxe'); requireRole(token,'admin'); return getAllFeeStructures(); }
-function adminSaveFeeStructure(token, data) { requirePlan('deluxe'); requireRole(token,'admin'); return saveFeeStructure(data); }
-function adminDeleteFeeStructure(token, id) { requirePlan('deluxe'); requireRole(token,'admin'); return deleteFeeStructure(id); }
-function adminGenerateBills(token, term, sess) { requirePlan('deluxe'); var s = requireRole(token,'admin'); return generateTermBills(term, sess, s.userId); }
-function adminGetExpenses(token) { requirePlan('deluxe'); requireRole(token,'admin'); return getAllExpenses(); }
-function adminRecordExpense(token, data) { requirePlan('deluxe'); var s = requireRole(token,'admin'); return recordExpense(data, s.userId); }
-function adminGetFinancialStats(token, term, sess) { requirePlan('deluxe'); requireRole(token,'admin'); return getFinancialDashboardStats(term, sess); }
-function adminGetIncomeExpenseReport(token, term, sess) { requirePlan('deluxe'); requireRole(token,'admin'); return getIncomeExpenseReport(term, sess); }
-function adminGetDebtors(token, term, sess) { requirePlan('deluxe'); requireRole(token,'admin'); return getDebtors(term, sess); }
-function adminSendReminders(token, term, sess, batchSize) { requirePlan('deluxe'); requireRole(token,'admin'); return sendOutstandingBalanceReminders(term, sess, null, batchSize); }
-function adminRecordPayment(token, data) { requirePlan('deluxe'); var s = requireRole(token,'admin'); return recordPayment(data, s.userId); }
-function adminApprovePayment(token, payId) { requirePlan('deluxe'); var s = requireRole(token,'admin'); return approvePayment(payId, s.userId); }
-function adminRejectPayment(token, payId) { requirePlan('deluxe'); var s = requireRole(token,'admin'); return rejectPayment(payId, s.userId); }
-function adminReversePayment(token, payId, reason) { requirePlan('deluxe'); var s = requireRole(token,'admin'); return reversePayment(payId, reason, s.userId); }
-function adminRecordCreditNote(token, data) { requirePlan('deluxe'); var s = requireRole(token,'admin'); return recordCreditNote(data, s.userId); }
+function adminGetPayments(token, filters) { requirePlan('deluxe', token); requireRole(token,'admin'); return getAllPayments(filters); }
+function adminGetBills(token, filters) { requirePlan('deluxe', token); requireRole(token,'admin'); return getAllBills(filters); }
+function adminGetFeeStructures(token) { requirePlan('deluxe', token); requireRole(token,'admin'); return getAllFeeStructures(); }
+function adminSaveFeeStructure(token, data) { requirePlan('deluxe', token); requireRole(token,'admin'); return saveFeeStructure(data); }
+function adminDeleteFeeStructure(token, id) { requirePlan('deluxe', token); requireRole(token,'admin'); return deleteFeeStructure(id); }
+function adminGenerateBills(token, term, sess) { requirePlan('deluxe', token); var s = requireRole(token,'admin'); return generateTermBills(term, sess, s.userId); }
+function adminGetExpenses(token) { requirePlan('deluxe', token); requireRole(token,'admin'); return getAllExpenses(); }
+function adminRecordExpense(token, data) { requirePlan('deluxe', token); var s = requireRole(token,'admin'); return recordExpense(data, s.userId); }
+function adminGetFinancialStats(token, term, sess) { requirePlan('deluxe', token); requireRole(token,'admin'); return getFinancialDashboardStats(term, sess); }
+function adminGetIncomeExpenseReport(token, term, sess) { requirePlan('deluxe', token); requireRole(token,'admin'); return getIncomeExpenseReport(term, sess); }
+function adminGetDebtors(token, term, sess) { requirePlan('deluxe', token); requireRole(token,'admin'); return getDebtors(term, sess); }
+function adminSendReminders(token, term, sess, batchSize) { requirePlan('deluxe', token); requireRole(token,'admin'); return sendOutstandingBalanceReminders(term, sess, null, batchSize); }
+function adminRecordPayment(token, data) { requirePlan('deluxe', token); var s = requireRole(token,'admin'); return recordPayment(data, s.userId); }
+function adminApprovePayment(token, payId) { requirePlan('deluxe', token); var s = requireRole(token,'admin'); return approvePayment(payId, s.userId); }
+function adminRejectPayment(token, payId) { requirePlan('deluxe', token); var s = requireRole(token,'admin'); return rejectPayment(payId, s.userId); }
+function adminReversePayment(token, payId, reason) { requirePlan('deluxe', token); var s = requireRole(token,'admin'); return reversePayment(payId, reason, s.userId); }
+function adminRecordCreditNote(token, data) { requirePlan('deluxe', token); var s = requireRole(token,'admin'); return recordCreditNote(data, s.userId); }
 function adminGenerateResult(token, sid, term, sess, reportType) { requireRole(token,['admin','admin_assistant']); return generateResultPDF(sid, term, sess, reportType); }
 function adminGenerateBulkResult(token, className, term, sess, reportType) { requireRole(token,['admin','admin_assistant','principal','vp','headteacher']); return generateBulkClassResultPDF(className, term, sess, reportType); }
-function adminGenerateReceipt(token, payId) { requirePlan('deluxe'); requireRole(token,'admin'); return generateReceiptPDF(payId); }
-function adminGetAllLessonPlans(token, term, sess) { requirePlan('standard'); requireRole(token,['admin','admin_assistant']); return getAllLessonPlans(term, sess); }
-function adminApproveLessonPlan(token, planId, note) { requirePlan('standard'); var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('APPROVE_LESSON', {planId:planId, note:note}, s.userId); return approveLessonPlan(s.userId, planId, note); }
-function adminRejectLessonPlan(token, planId, note) { requirePlan('standard'); var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('REJECT_LESSON', {planId:planId, note:note}, s.userId); return rejectLessonPlan(s.userId, planId, note); }
+function adminGenerateReceipt(token, payId) { requirePlan('deluxe', token); requireRole(token,'admin'); return generateReceiptPDF(payId); }
+function adminGetAllLessonPlans(token, term, sess) { requirePlan('standard', token); requireRole(token,['admin','admin_assistant']); return getAllLessonPlans(term, sess); }
+function adminApproveLessonPlan(token, planId, note) { requirePlan('standard', token); var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('APPROVE_LESSON', {planId:planId, note:note}, s.userId); return approveLessonPlan(s.userId, planId, note); }
+function adminRejectLessonPlan(token, planId, note) { requirePlan('standard', token); var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('REJECT_LESSON', {planId:planId, note:note}, s.userId); return rejectLessonPlan(s.userId, planId, note); }
 function adminGetGrading(token) { requireRole(token,['admin','admin_assistant']); return getSheetData('Grading'); }
 function adminSaveGradeRule(token, data) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('SAVE_GRADE_RULE', data, s.userId); return updateGradingRule(data); }
 function adminGetStudentSubjects(token, sid) {
@@ -598,12 +614,12 @@ function adminComputePositions(token, className, term, sess) { var s = requireRo
 
 // ─── PENDING TASK ENDPOINTS (Maker-Checker — Deluxe Plan only) ──────────────
 function adminGetPendingTasks(token) {
-  requirePlan('deluxe');
+  requirePlan('deluxe', token);
   requireRole(token, 'admin');
   return getPendingTasks();
 }
 function adminApproveTask(token, taskId) {
-  requirePlan('deluxe');
+  requirePlan('deluxe', token);
   var s = requireRole(token, 'admin');
   var tasks = getPendingTasks();
   var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
@@ -664,7 +680,7 @@ function adminApproveTask(token, taskId) {
   return res;
 }
 function adminRejectTask(token, taskId, reason) {
-  requirePlan('deluxe');
+  requirePlan('deluxe', token);
   var s = requireRole(token, 'admin');
   return updatePendingTaskStatus(taskId, 'rejected', reason, s.userId);
 }
@@ -806,32 +822,32 @@ function teacherGetAffective(token, sid, term, sess) {
   return getAffectiveRecord(sid, term, sess);
 }
 function teacherCreateLessonPlan(token, data) {
-  requirePlan('standard');
+  requirePlan('standard', token);
   var s = requireRole(token, ['teacher','primary_teacher']);
   return createLessonPlan(s.userId, data);
 }
 function teacherUpdateLessonPlan(token, planId, data) {
-  requirePlan('standard');
+  requirePlan('standard', token);
   var s = requireRole(token, ['teacher','primary_teacher']);
   return updateLessonPlan(s.userId, planId, data);
 }
 function teacherSubmitLessonPlan(token, planId) {
-  requirePlan('standard');
+  requirePlan('standard', token);
   var s = requireRole(token, ['teacher','primary_teacher']);
   return submitLessonPlan(s.userId, planId);
 }
 function teacherDeleteLessonPlan(token, planId) {
-  requirePlan('standard');
+  requirePlan('standard', token);
   var s = requireRole(token, ['teacher','primary_teacher']);
   return deleteLessonPlan(s.userId, planId);
 }
 function teacherGetMyLessonPlans(token, term, sess) {
-  requirePlan('standard');
+  requirePlan('standard', token);
   var s = requireRole(token, ['teacher','primary_teacher']);
   return getTeacherLessonPlans(s.userId, term, sess);
 }
 function teacherGenerateLessonPlanPDF(token, planId) {
-  requirePlan('standard');
+  requirePlan('standard', token);
   requireRole(token, ['teacher','primary_teacher']);
   return generateLessonPlanPDF(planId);
 }
@@ -909,8 +925,8 @@ function accountsGetStudentLedger(token, sid) {
 function accountsGenerateReceipt(token, payId) { requireRole(token,'accounts'); return generateReceiptPDF(payId); }
 function accountsApprovePayment(token, payId) { var s = requireRole(token,'accounts'); return approvePayment(payId, s.userId); }
 function accountsRejectPayment(token, payId) { var s = requireRole(token,'accounts'); return rejectPayment(payId, s.userId); }
-function accountsReversePayment(token, payId, reason) { requirePlan('deluxe'); var s = requireRole(token,'accounts'); return reversePayment(payId, reason, s.userId); }
-function accountsRecordCreditNote(token, data) { requirePlan('deluxe'); var s = requireRole(token,'accounts'); return recordCreditNote(data, s.userId); }
+function accountsReversePayment(token, payId, reason) { requirePlan('deluxe', token); var s = requireRole(token,'accounts'); return reversePayment(payId, reason, s.userId); }
+function accountsRecordCreditNote(token, data) { requirePlan('deluxe', token); var s = requireRole(token,'accounts'); return recordCreditNote(data, s.userId); }
 function accountsGetExpenses(token) {
   var s = requireRole(token,'accounts');
   return getAllExpenses(s.section === 'both' ? null : { section: s.section });
