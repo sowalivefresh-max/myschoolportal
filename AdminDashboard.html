@@ -1110,11 +1110,21 @@
       }
       
       callServer('adminImpersonateUser', [AA.token, id], function(res) {
-        if (res.success && res.url) {
+        if (res.success && res.token && res.role) {
+          var dashboardMap = {
+            developer: 'AdminDashboard.html', admin: 'AdminDashboard.html', admin_assistant: 'AdminDashboard.html',
+            principal: 'PrincipalDashboard.html', vp: 'VPDashboard.html',
+            headteacher: 'HeadTeacherDashboard.html', teacher: 'TeacherDashboard.html',
+            primary_teacher: 'PrimaryTeacherDashboard.html', accounts: 'AccountsDashboard.html',
+            parent: 'ParentDashboard.html'
+          };
+          var dashboard = dashboardMap[res.role] || 'Login.html';
+          var redirectUrl = dashboard + '?token=' + encodeURIComponent(res.token);
+
           if (newTab) {
-            newTab.location.href = res.url;
+            newTab.location.href = redirectUrl;
           } else {
-            window.open(res.url, '_blank');
+            window.open(redirectUrl, '_blank');
           }
         } else {
           if (newTab) newTab.close();

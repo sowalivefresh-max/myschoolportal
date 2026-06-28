@@ -475,7 +475,7 @@ function adminImpersonateUser(token, targetUserId) {
   var newToken = createSession(targetUser.id || targetUser.iD, targetUser.role, targetUser.fullName, targetUser.section);
   logAudit(s.userId, 'IMPERSONATE', s.fullName + ' impersonated ' + targetUser.fullName + ' (' + targetUser.role + ')');
 
-  return { success: true, url: getDashboardUrl(newToken) };
+  return { success: true, url: getDashboardUrl(newToken), token: newToken, role: targetUser.role };
 }
 function adminGetPasswordRequests(token) {
   requireRole(token,['admin','admin_assistant']);
