@@ -1053,13 +1053,24 @@ function setupSheets() {
     st.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }
 
-  // Seed default admin and developer
+  // Seed default admin if database is completely empty
   var us = ss.getSheetByName('Users');
   if (us.getLastRow() <= 1) {
     var seedSaltAdmin = generateSalt();
     us.appendRow([generateId(),'System Administrator','admin@school.portal',
       hashPassword('admin123', seedSaltAdmin),'admin','both','','','active','','',new Date().toISOString(),'',seedSaltAdmin]);
-      
+  }
+
+  // Always ensure a developer account exists (crucial for existing installations)
+  var usersData = us.getDataRange().getValues();
+  var hasDeveloper = false;
+  for (var i = 1; i < usersData.length; i++) {
+    if (usersData[i][4] === 'developer' || usersData[i][2] === 'developer@school.portal') {
+      hasDeveloper = true;
+      break;
+    }
+  }
+  if (!hasDeveloper) {
     var seedSaltDev = generateSalt();
     us.appendRow([generateId(),'Portal Developer','developer@school.portal',
       hashPassword('dev123', seedSaltDev),'developer','both','','','active','','',new Date().toISOString(),'',seedSaltDev]);
