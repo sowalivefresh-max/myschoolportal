@@ -314,6 +314,7 @@ function include(filename) {
 
 function loginUser(email, password) {
   try {
+    setupSheets(); // Ensures missing default accounts (like Developer) are seeded before auth
     var res = authenticate(email, password);
     if (res.success) {
       res.url = getDashboardUrl(res.token);
