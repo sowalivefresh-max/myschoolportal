@@ -1053,12 +1053,16 @@ function setupSheets() {
     st.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }
 
-  // Seed default admin (generic email — update to your school's admin address)
+  // Seed default admin and developer
   var us = ss.getSheetByName('Users');
   if (us.getLastRow() <= 1) {
-    var seedSalt = generateSalt();
+    var seedSaltAdmin = generateSalt();
     us.appendRow([generateId(),'System Administrator','admin@school.portal',
-      hashPassword('admin123', seedSalt),'admin','both','','','active','','',new Date().toISOString(),'',seedSalt]);
+      hashPassword('admin123', seedSaltAdmin),'admin','both','','','active','','',new Date().toISOString(),'',seedSaltAdmin]);
+      
+    var seedSaltDev = generateSalt();
+    us.appendRow([generateId(),'Portal Developer','developer@school.portal',
+      hashPassword('dev123', seedSaltDev),'developer','both','','','active','','',new Date().toISOString(),'',seedSaltDev]);
   }
 
   // Remove default Sheet1
