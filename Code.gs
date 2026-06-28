@@ -428,8 +428,18 @@ function requirePlan(minPlan) {
 
 function adminGetStats(token) { requireRole(token,['admin','admin_assistant']); return getAdminStats(); }
 function adminGetUsers(token) { requireRole(token,['admin','admin_assistant']); return getAllUsers(); }
-function adminCreateUser(token, data) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('CREATE_USER', data, s.userId); return createUser(data); }
-function adminUpdateUser(token, uid, data) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('UPDATE_USER', {uid: uid, data: data}, s.userId); return updateUser(uid, data); }
+function adminCreateUser(token, data) { 
+  var s = requireRole(token,['admin','admin_assistant']); 
+  if (data.role === 'developer' && s.role !== 'developer') throw new Error('Security Error: Only developers can create developer accounts.');
+  if (s.role === 'admin_assistant') return logPendingTask('CREATE_USER', data, s.userId); 
+  return createUser(data); 
+}
+function adminUpdateUser(token, uid, data) { 
+  var s = requireRole(token,['admin','admin_assistant']); 
+  if (data.role === 'developer' && s.role !== 'developer') throw new Error('Security Error: Only developers can grant developer privileges.');
+  if (s.role === 'admin_assistant') return logPendingTask('UPDATE_USER', {uid: uid, data: data}, s.userId); 
+  return updateUser(uid, data); 
+}
 function adminDeleteUser(token, uid) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('DELETE_USER', {uid: uid}, s.userId); return deleteUser(uid); }
 function adminResetUserPassword(token, uid) { 
   var s = requireRole(token,['admin','admin_assistant']); 

@@ -1042,6 +1042,11 @@
 
       var allowedRoles = isSingleSection ? (isPrimaryOnly ? primaryRoles : secondaryRoles) : bothRoles;
 
+      // SECURITY: Only developers can see the developer role option in the UI
+      if (AA && AA.user && AA.user.role !== 'developer') {
+        allowedRoles = allowedRoles.filter(function(r) { return r !== 'developer'; });
+      }
+
       // Filter the role select in user creation modal
       var roleSelect = document.querySelector('#userForm select[name="role"]');
       if (roleSelect) {
