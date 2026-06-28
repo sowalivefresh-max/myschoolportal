@@ -212,7 +212,13 @@ function getStudentsByClass(className) {
 
 // ─── CLASSES ────────────────────────────────────────────────
 
-function getAllClasses() { return getSheetData('Classes'); }
+function getAllClasses() { 
+  var classes = getSheetData('Classes'); 
+  var type = getSettings().institution_type || 'both';
+  if (type === 'primary') return classes.filter(function(c) { return String(c.section).toLowerCase() === 'primary'; });
+  if (type === 'secondary') return classes.filter(function(c) { return String(c.section).toLowerCase() === 'high'; });
+  return classes;
+}
 
 function createClass(data) {
   if (!data.className) return { success: false, message: 'Class name required.' };
@@ -245,7 +251,13 @@ function deleteClass(classId) {
 
 // ─── SUBJECTS ───────────────────────────────────────────────
 
-function getAllSubjects() { return getSheetData('Subjects'); }
+function getAllSubjects() { 
+  var subjects = getSheetData('Subjects'); 
+  var type = getSettings().institution_type || 'both';
+  if (type === 'primary') return subjects.filter(function(s) { return String(s.section).toLowerCase() === 'primary'; });
+  if (type === 'secondary') return subjects.filter(function(s) { return String(s.section).toLowerCase() === 'high'; });
+  return subjects;
+}
 
 function getSubjectById(subjectId) {
   var subjects = getSheetData('Subjects');
