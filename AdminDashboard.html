@@ -479,11 +479,12 @@
 
                 <div class="aa-form-group">
                   <label class="aa-label">Subscription Plan</label>
-                  <select name="subscription_plan" class="aa-select">
+                  <select name="subscription_plan" class="aa-select" disabled title="Managed by portal administrator">
                     <option value="basic">Basic Plan</option>
                     <option value="standard">Standard Plan</option>
                     <option value="deluxe">Deluxe Plan</option>
                   </select>
+                  <small class="text-muted" style="font-size:11px;display:block;margin-top:4px;"><i class="fa fa-lock"></i> Subscription plan upgrades are managed by the developer.</small>
                 </div>
 
                 <button type="submit" class="aa-btn aa-btn-primary w-100">Save Settings</button>
@@ -529,6 +530,7 @@
               <option value="admin">Administrator</option>
               <option value="admin_assistant">Admin Assistant</option>
               <option value="external">External Vendor</option>
+              <option value="developer">Developer</option>
             </select>
           </div>
           <div class="aa-form-group">
@@ -1002,6 +1004,20 @@
           badge.style.cssText = 'display:inline-block;margin-top:5px;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:' + pc.split(';color:')[0] + ';color:' + pc.split(';color:')[1].split(';')[0] + ';border:1px solid ' + pc.split('border-color:')[1] + ';';
         }
 
+        // Enable subscription plan select for developers only
+        var planSelect = document.querySelector('select[name="subscription_plan"]');
+        if (planSelect) {
+          if (AA.user.role === 'developer') {
+            planSelect.disabled = false;
+            planSelect.title = '';
+            var lockNote = planSelect.nextElementSibling;
+            if (lockNote && lockNote.tagName === 'SMALL') lockNote.style.display = 'none';
+          } else {
+            planSelect.disabled = true;
+            planSelect.title = 'Managed by portal administrator';
+          }
+        }
+
         // --- Institution type filter ---
         institutionType = (s.institution_type || 'both').toLowerCase();
         applyInstitutionFilter(institutionType);
@@ -1020,9 +1036,9 @@
       var isSingleSection = isPrimaryOnly || isSecondaryOnly;
 
       // Roles available per section type
-      var primaryRoles   = ['primary_teacher', 'headteacher', 'parent', 'admin', 'admin_assistant', 'accounts'];
-      var secondaryRoles = ['teacher', 'principal', 'vp', 'parent', 'admin', 'admin_assistant', 'accounts'];
-      var bothRoles      = ['teacher', 'primary_teacher', 'principal', 'vp', 'headteacher', 'accounts', 'parent', 'admin', 'admin_assistant', 'external'];
+      var primaryRoles   = ['primary_teacher', 'headteacher', 'parent', 'admin', 'admin_assistant', 'accounts', 'developer'];
+      var secondaryRoles = ['teacher', 'principal', 'vp', 'parent', 'admin', 'admin_assistant', 'accounts', 'developer'];
+      var bothRoles      = ['teacher', 'primary_teacher', 'principal', 'vp', 'headteacher', 'accounts', 'parent', 'admin', 'admin_assistant', 'external', 'developer'];
 
       var allowedRoles = isSingleSection ? (isPrimaryOnly ? primaryRoles : secondaryRoles) : bothRoles;
 

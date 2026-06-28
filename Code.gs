@@ -256,7 +256,7 @@ function serveDashboard(role, token) {
   }
 
   var map = {
-    admin: 'AdminDashboard', admin_assistant: 'AdminDashboard', principal: 'PrincipalDashboard', vp: 'VPDashboard',
+    developer: 'AdminDashboard', admin: 'AdminDashboard', admin_assistant: 'AdminDashboard', principal: 'PrincipalDashboard', vp: 'VPDashboard',
     headteacher: 'HeadTeacherDashboard', teacher: 'TeacherDashboard',
     primary_teacher: 'PrimaryTeacherDashboard', accounts: 'AccountsDashboard', parent: 'ParentDashboard'
   };
@@ -389,7 +389,7 @@ function requireRole(token, roles) {
   var s = validateSession(token);
   if (!s) throw new Error('Session expired. Please log in again.');
   var allowed = Array.isArray(roles) ? roles : [roles];
-  if (allowed.indexOf(s.role) === -1 && s.role !== 'admin')
+  if (allowed.indexOf(s.role) === -1 && s.role !== 'admin' && s.role !== 'developer')
     throw new Error('Access denied. Insufficient permissions.');
   return s;
 }
@@ -501,7 +501,15 @@ function adminUpdateSubject(token, sid, data) { var s = requireRole(token,['admi
 function adminDeleteSubject(token, sid) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('DELETE_SUBJECT', {sid: sid}, s.userId); return deleteSubject(sid); }
 function adminAssignSubjectsToTeacher(token, tid, sids) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('ASSIGN_SUBJECTS', {tid: tid, sids: sids}, s.userId); return assignSubjectsToTeacher(tid, sids); }
 function adminGetSettings(token) { requireRole(token,['admin','admin_assistant']); return getSettings(); }
-function adminUpdateSettings(token, data) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('UPDATE_SETTINGS', data, s.userId); return updateSettings(data); }
+function adminUpdateSettings(token, data) { 
+  var s = requireRole(token,['admin','admin_assistant']); 
+  // SECURITY: Prevent school admin from upgrading their own plan without paying
+  if (s.role !== 'developer' && data && data.hasOwnProperty('subscription_plan')) {
+    delete data.subscription_plan;
+  }
+  if (s.role === 'admin_assistant') return logPendingTask('UPDATE_SETTINGS', data, s.userId); 
+  return updateSettings(data); 
+}
 function adminGetScores(token, filters) { requireRole(token,['admin','admin_assistant']); return getScores(filters); }
 function adminLockScores(token, filters) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('LOCK_SCORES', filters, s.userId); return lockScores(filters); }
 function adminUnlockScores(token, filters) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('UNLOCK_SCORES', filters, s.userId); return unlockScores(filters); }
