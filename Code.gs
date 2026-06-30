@@ -584,25 +584,28 @@ function adminSaveGradeRule(token, data) { var s = requireRole(token,['admin','a
 function adminGetStudentSubjects(token, sid) {
   requireRole(token,['admin','admin_assistant']);
   var student = getStudentById(sid);
-  var studentSection = student ? (student.section || '').toLowerCase() : '';
-  if (studentSection === 'highschool') studentSection = 'high';
+  var studentSection = student ? (student.section || '').toLowerCase().trim() : '';
+  if (studentSection === 'highschool' || studentSection === 'secondary') studentSection = 'high';
+  
   var enrolled = getStudentSubjects(sid, getSettings().current_session);
   var all = getAllSubjects();
   var enrolledIds = enrolled.map(function(s){ return String(s.id || s.iD); });
+  
   var available = all.filter(function(s){
     // Exclude already-enrolled subjects
     if (enrolledIds.indexOf(String(s.id||s.iD)) !== -1) return false;
-    // Filter by student's section: primary students see only primary subjects,
-    // high school students see only high school subjects
+    
+    // Filter by student's section
     if (studentSection && studentSection !== 'both') {
-      var subSection = (s.section || '').toLowerCase();
-      if (subSection === 'highschool') subSection = 'high';
+      var subSection = (s.section || '').toLowerCase().trim();
+      if (subSection === 'highschool' || subSection === 'secondary') subSection = 'high';
       if (subSection && subSection !== studentSection) return false;
     }
+    
     // Filter by target class mapping
     if (s.className && String(s.className).trim() !== '') {
-      var targetClasses = String(s.className).split(',').map(function(c) { return c.trim(); });
-      var stClass = student ? (student.class || student.className || '') : '';
+      var targetClasses = String(s.className).split(',').map(function(c) { return c.trim().toLowerCase(); });
+      var stClass = student ? String(student.class || student.className || '').trim().toLowerCase() : '';
       if (targetClasses.indexOf(stClass) === -1) return false;
     }
     return true;
