@@ -658,13 +658,14 @@ function getStudentResult(studentId, term, session) {
 function getAdminStats(section) {
   var users = getSheetData('Users');
   var students = getSheetData('Students');
-  var classes = getSheetData('Classes');
-  var subjects = getSheetData('Subjects');
+  var classes = getAllClasses();
+  var subjects = getAllSubjects();
 
   if (section && section !== 'both') {
     users = users.filter(function(u) { return u.section === section || u.section === 'both'; });
     students = students.filter(function(s) { return s.section === section; });
     classes = classes.filter(function(c) { return c.section === section; });
+    subjects = subjects.filter(function(s) { return s.section === section; });
   }
 
   var staffRoles = ['admin', 'admin_assistant', 'principal', 'vp', 'headteacher', 'teacher', 'primary_teacher', 'accounts'];
