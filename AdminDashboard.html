@@ -1212,6 +1212,15 @@
     }
     function saveStudent() {
       var data = getFormData('studentForm');
+      
+      // For single-section schools, the section dropdown is disabled and may not submit its value.
+      // Force the correct section value based on institution type.
+      if (!data.section || data.section === '') {
+        if (institutionType === 'secondary') data.section = 'high';
+        else if (institutionType === 'primary') data.section = 'primary';
+        else data.section = 'both';
+      }
+      
       var pEmail = document.getElementById('studentParentEmail').value.trim();
       if(pEmail) {
         var p = globalUsers.find(function(u){ return u.email === pEmail && u.role === 'parent'; });

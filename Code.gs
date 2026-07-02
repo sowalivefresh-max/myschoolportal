@@ -105,6 +105,7 @@ function getActionWhitelist() {
     'adminGetGrading':            adminGetGrading,
     'adminSaveGradeRule':         adminSaveGradeRule,
     'adminGetStudentSubjects':    adminGetStudentSubjects,
+    'adminDebugStudentSubjects':  adminDebugStudentSubjects,
     'adminGetSchoolPerformance':  adminGetSchoolPerformance,
     'adminComputePositions':      adminComputePositions,
     'adminGetPendingTasks':       adminGetPendingTasks,
@@ -590,12 +591,14 @@ function adminGetStudentSubjects(token, sid) {
   // Normalize all possible section spellings → 'high' or 'primary'
   function normalizeSection(sec) {
     var s = String(sec || '').toLowerCase().trim();
-    if (s === 'highschool' || s === 'secondary' || s === 'high') return 'high';
-    if (s === 'primary' || s === 'primaryschool') return 'primary';
+    if (s === 'highschool' || s === 'high school' || s === 'secondary' || s === 'high') return 'high';
+    if (s === 'primary' || s === 'primaryschool' || s === 'primary school') return 'primary';
     return s; // 'both' or ''
   }
 
   var studentSection = normalizeSection(student.section);
+
+  var settings = getSettings();
 
   // If student has no section set, derive it from their class
   if (!studentSection || studentSection === 'both') {
@@ -607,7 +610,14 @@ function adminGetStudentSubjects(token, sid) {
     if (matchedClass) studentSection = normalizeSection(matchedClass.section);
   }
 
-  var settings = getSettings();
+  // FINAL FALLBACK: If section STILL empty, derive from institution_type setting
+  // This covers single-section schools where students were created without a section value
+  if (!studentSection || studentSection === 'both') {
+    var instType = String(settings.institution_type || '').toLowerCase().trim();
+    if (instType === 'secondary') studentSection = 'high';
+    else if (instType === 'primary') studentSection = 'primary';
+  }
+
   var enrolled = getStudentSubjects(sid, settings.current_session);
   var all = getAllSubjects();
   var enrolledIds = enrolled.map(function(s){ return String(s.id || s.iD); });
@@ -637,6 +647,31 @@ function adminGetStudentSubjects(token, sid) {
 
   return { enrolled: enrolled, available: available };
 }
+
+// ─── DEBUG / DIAGNOSTIC ENDPOINT (remove after debugging) ──────────────────
+function adminDebugStudentSubjects(token, sid) {
+  requireRole(token, ['admin', 'developer']);
+  var student = getStudentById(sid);
+  var rawSubjects = getSheetData('Subjects');
+  var rawClasses  = getSheetData('Classes');
+  var settings    = getSettings();
+  var filteredSubjects = getAllSubjects();
+  var rawEnrollments = getSheetData('Enrollments').filter(function(e){
+    return String(e.studentID || e.studentId) === String(sid);
+  });
+  return {
+    student: student,
+    institution_type: settings.institution_type,
+    current_session: settings.current_session,
+    rawSubjectsCount: rawSubjects.length,
+    filteredSubjectsCount: filteredSubjects.length,
+    filteredSubjects: filteredSubjects,
+    rawClasses: rawClasses,
+    rawEnrollments: rawEnrollments
+  };
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 function adminGetSchoolPerformance(token, term, sess) { requireRole(token,['admin','admin_assistant']); return getSchoolPerformanceOverview(term, sess); }
 function adminComputePositions(token, className, term, sess) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('COMPUTE_POSITIONS', {className:className, term:term, sess:sess}, s.userId); return computeClassPositions(className, term, sess); }
 
