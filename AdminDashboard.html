@@ -140,7 +140,7 @@
               <div class="aa-card-body">
                 <div class="aa-grid-2">
                   <button class="aa-btn aa-btn-outline w-100" onclick="openModal('userModal');resetForm('userForm');applyInstitutionFilter(institutionType);"><i class="fa fa-plus"></i> Add User</button>
-                  <button class="aa-btn aa-btn-outline w-100" onclick="openModal('studentModal');resetForm('studentForm');document.getElementById('studentPhotoPreview').innerHTML='<i class=\'fa fa-user\' style=\'color:#aaa;\'></i>';document.getElementById('studentPhotoBase64').value='';"><i class="fa fa-plus"></i> Add Student</button>
+                  <button class="aa-btn aa-btn-outline w-100" onclick="openModal('studentModal');resetForm('studentForm');document.getElementById('studentPhotoPreview').innerHTML='<i class=\'fa fa-user\' style=\'color:#aaa;\'></i>';document.getElementById('studentPhotoBase64').value='';applyInstitutionFilter(institutionType);"><i class="fa fa-plus"></i> Add Student</button>
                   <button class="aa-btn aa-btn-outline w-100" onclick="openModal('classModal');resetForm('classForm')"><i class="fa fa-plus"></i> Add Class</button>
                   <button class="aa-btn aa-btn-outline w-100" onclick="openModal('subjectModal');resetForm('subjectForm')"><i class="fa fa-plus"></i> Add Subject</button>
                 </div>
@@ -228,7 +228,7 @@
                   <input type="text" id="search-students" class="aa-input" placeholder="Search students..." onkeyup="filterTable('search-students', 'studentsTable')">
                 </div>
                 <button class="aa-btn aa-btn-outline" onclick="openBulkModal('students')"><i class="fa fa-upload"></i> Bulk Import</button>
-                <button class="aa-btn aa-btn-primary" onclick="openModal('studentModal');resetForm('studentForm');document.getElementById('studentId').value=''"><i class="fa fa-plus"></i> Add Student</button>
+                <button class="aa-btn aa-btn-primary" onclick="openModal('studentModal');resetForm('studentForm');document.getElementById('studentId').value='';applyInstitutionFilter(institutionType);"><i class="fa fa-plus"></i> Add Student</button>
               </div>
             </div>
             <div class="aa-card-body" style="padding:0;">
@@ -1233,6 +1233,9 @@
          if(p) document.getElementById('studentParentEmail').value = p.email;
       }
       openModal('studentModal');
+      // Re-apply institution filter AFTER setFormData so the section dropdown
+      // is correctly locked/populated for single-section schools.
+      applyInstitutionFilter(institutionType);
     }
     function saveStudent() {
       var data = getFormData('studentForm');
