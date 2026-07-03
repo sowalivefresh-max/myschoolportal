@@ -105,7 +105,6 @@ function getActionWhitelist() {
     'adminGetGrading':            adminGetGrading,
     'adminSaveGradeRule':         adminSaveGradeRule,
     'adminGetStudentSubjects':    adminGetStudentSubjects,
-    'adminDebugStudentSubjects':  adminDebugStudentSubjects,
     'adminGetSchoolPerformance':  adminGetSchoolPerformance,
     'adminComputePositions':      adminComputePositions,
     'adminGetPendingTasks':       adminGetPendingTasks,
@@ -587,90 +586,32 @@ function adminGetStudentSubjects(token, sid) {
   var student = getStudentById(sid);
   if (!student) return { enrolled: [], available: [] };
 
-  // Normalize student section — the sheet key is 'section'
-  // Normalize all possible section spellings → 'high' or 'primary'
-  function normalizeSection(sec) {
-    var s = String(sec || '').toLowerCase().trim();
-    if (s === 'highschool' || s === 'high school' || s === 'secondary' || s === 'high') return 'high';
-    if (s === 'primary' || s === 'primaryschool' || s === 'primary school') return 'primary';
-    return s; // 'both' or ''
-  }
-
-  var studentSection = normalizeSection(student.section);
-
   var settings = getSettings();
-
-  // If student has no section set, derive it from their class
-  if (!studentSection || studentSection === 'both') {
-    var allClasses = getSheetData('Classes');
-    var stClass = String(student.class || student.className || '').trim().toLowerCase();
-    var matchedClass = allClasses.filter(function(c) {
-      return String(c.className || '').trim().toLowerCase() === stClass;
-    })[0];
-    if (matchedClass) studentSection = normalizeSection(matchedClass.section);
-  }
-
-  // FINAL FALLBACK: If section STILL empty, derive from institution_type setting
-  // This covers single-section schools where students were created without a section value
-  if (!studentSection || studentSection === 'both') {
-    var instType = String(settings.institution_type || '').toLowerCase().trim();
-    if (instType === 'secondary') studentSection = 'high';
-    else if (instType === 'primary') studentSection = 'primary';
-  }
-
   var enrolled = getStudentSubjects(sid, settings.current_session);
-  var all = getAllSubjects();
+  var all = getAllSubjects(); // Already filtered by institution_type (primary/secondary/both)
   var enrolledIds = enrolled.map(function(s){ return String(s.id || s.iD); });
 
+  // Student's class — sheet column "Class" maps to key "class" via toCamelCase
   var studentClassName = String(student.class || student.className || '').trim().toLowerCase();
 
   var available = all.filter(function(sub){
     // Exclude already-enrolled subjects
     if (enrolledIds.indexOf(String(sub.id || sub.iD)) !== -1) return false;
 
-    // Filter by student's section
-    if (studentSection && studentSection !== 'both') {
-      var subSection = normalizeSection(sub.section);
-      if (subSection && subSection !== 'both' && subSection !== studentSection) return false;
-    }
-
     // Filter by target class mapping
-    // IMPORTANT: Subjects sheet column header is 'Class', which maps to key 's.class' (not 's.className')
+    // Subject's "Class" column (key: sub.class) contains comma-separated class names
     var targetClassRaw = String(sub.class || sub.className || '').trim();
     if (targetClassRaw !== '') {
       var targetClasses = targetClassRaw.split(',').map(function(c) { return c.trim().toLowerCase(); });
       if (studentClassName && targetClasses.indexOf(studentClassName) === -1) return false;
     }
+    // If subject has no class restriction (empty), it's available to all students in that section
 
     return true;
   });
 
   return { enrolled: enrolled, available: available };
 }
-
-// ─── DEBUG / DIAGNOSTIC ENDPOINT (remove after debugging) ──────────────────
-function adminDebugStudentSubjects(token, sid) {
-  requireRole(token, ['admin', 'developer']);
-  var student = getStudentById(sid);
-  var rawSubjects = getSheetData('Subjects');
-  var rawClasses  = getSheetData('Classes');
-  var settings    = getSettings();
-  var filteredSubjects = getAllSubjects();
-  var rawEnrollments = getSheetData('Enrollments').filter(function(e){
-    return String(e.studentID || e.studentId) === String(sid);
-  });
-  return {
-    student: student,
-    institution_type: settings.institution_type,
-    current_session: settings.current_session,
-    rawSubjectsCount: rawSubjects.length,
-    filteredSubjectsCount: filteredSubjects.length,
-    filteredSubjects: filteredSubjects,
-    rawClasses: rawClasses,
-    rawEnrollments: rawEnrollments
-  };
-}
-// ────────────────────────────────────────────────────────────────────────────
 
 function adminGetSchoolPerformance(token, term, sess) { requireRole(token,['admin','admin_assistant']); return getSchoolPerformanceOverview(term, sess); }
 function adminComputePositions(token, className, term, sess) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('COMPUTE_POSITIONS', {className:className, term:term, sess:sess}, s.userId); return computeClassPositions(className, term, sess); }

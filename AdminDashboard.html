@@ -967,10 +967,19 @@
       document.getElementById('subjectTeacherSelect').innerHTML = options;
     }
 
+    // Normalize section value to canonical form: 'high', 'primary', or 'both'
+    function normalizeSection(sec) {
+      var s = String(sec || '').toLowerCase().trim();
+      if (s === 'high' || s === 'highschool' || s === 'high school' || s === 'secondary') return 'high';
+      if (s === 'primary' || s === 'primaryschool' || s === 'primary school') return 'primary';
+      return s; // 'both' or ''
+    }
+
     function populateClassDropdowns() {
       var filteredClasses = globalClasses.filter(function(c) {
-        if (institutionType === 'primary') return c.section === 'primary' || !c.section;
-        if (institutionType === 'secondary') return c.section === 'high' || c.section === 'highschool' || !c.section;
+        var sec = normalizeSection(c.section);
+        if (institutionType === 'primary') return sec === 'primary' || !sec;
+        if (institutionType === 'secondary') return sec === 'high' || !sec;
         return true;
       });
       var options = '<option value="">Select Class</option>';
@@ -1190,7 +1199,22 @@
       var s = globalStudents.find(function(x) { return String(x.id||x.iD) === String(id); });
       if(!s) return;
       document.getElementById('studentId').value = id;
-      setFormData('studentForm', s);
+      
+      // The Students sheet column "Class" maps to key "class" via toCamelCase,
+      // but the form field is named "className". Copy the value so setFormData can find it.
+      var formData = Object.assign({}, s);
+      if (formData.class && !formData.className) formData.className = formData.class;
+      
+      // Normalize section to match dropdown option values ('high' or 'primary')
+      if (formData.section) formData.section = normalizeSection(formData.section);
+      
+      // For single-section schools, force the correct section
+      if (!formData.section || formData.section === '') {
+        if (institutionType === 'secondary') formData.section = 'high';
+        else if (institutionType === 'primary') formData.section = 'primary';
+      }
+      
+      setFormData('studentForm', formData);
       
       // Handle photo preview
       var photoPreview = document.getElementById('studentPhotoPreview');
