@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -14,7 +14,7 @@
         <div class="aa-brand-icon">AA</div>
         <div class="aa-brand-text">
           <div class="aa-brand-name" id="sb-school-name">Loading\u2026</div>
-          <div class="aa-brand-role">Subject Teacher</div>
+          <div class="aa-brand-role" id="sb-teacher-role">Subject Teacher</div>
         </div>
       </div>
       <nav class="aa-nav">
@@ -29,6 +29,10 @@
         <button class="aa-nav-item" id="nav-lessonplans" onclick="switchTab('tch-tabs', 'tab-lessonplans'); setActiveNav('nav-lessonplans')">
           <i class="fa fa-book-open"></i> Lesson Plans
         </button>
+        <!-- My Class nav (only shown for class teachers) -->
+        <button class="aa-nav-item" id="nav-myclass" style="display:none;" onclick="switchTab('tch-tabs', 'tab-myclass'); setActiveNav('nav-myclass')">
+          <i class="fa fa-chalkboard-teacher"></i> My Class
+        </button>
         <button class="aa-nav-item text-danger" onclick="AA.logout()">
           <i class="fa fa-sign-out-alt"></i> Logout
         </button>
@@ -38,7 +42,7 @@
           <div class="aa-user-avatar">TR</div>
           <div>
             <div class="aa-user-name">Loading...</div>
-            <div class="aa-user-role">Subject Teacher</div>
+            <div class="aa-user-role" id="footer-teacher-role">Subject Teacher</div>
           </div>
         </div>
       </div>
@@ -58,6 +62,7 @@
           <div class="aa-tab active" data-tab="tab-dashboard" data-onload="loadDashboard"></div>
           <div class="aa-tab" data-tab="tab-scores" data-onload="loadMySubjectsForScores"></div>
           <div class="aa-tab" data-tab="tab-lessonplans" data-onload="loadMyLessonPlans"></div>
+          <div class="aa-tab" data-tab="tab-myclass" data-onload="loadMyClass"></div>
         </div>
 
         <!-- TAB: Dashboard -->
@@ -138,6 +143,58 @@
             <div class="aa-card-body" style="padding:0;">
               <table class="aa-table" id="myPlansTable">
                 <thead><tr><th>Topic</th><th>Subject</th><th>Week</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: My Class (class teachers only) -->
+        <div class="aa-tab-content" data-group="tch-tabs" data-id="tab-myclass">
+          <div class="aa-grid-2 mb-4">
+            <div class="aa-stat-card">
+              <div class="aa-stat-icon bg-info"><i class="fa fa-user-graduate"></i></div>
+              <div class="aa-stat-value" id="stat-myclass-students">-</div>
+              <div class="aa-stat-label" id="stat-myclass-label">Students in My Class</div>
+            </div>
+            <div class="aa-stat-card">
+              <div class="aa-stat-icon bg-warning"><i class="fa fa-chalkboard"></i></div>
+              <div class="aa-stat-value" id="stat-myclass-name">-</div>
+              <div class="aa-stat-label">My Assigned Class</div>
+            </div>
+          </div>
+          <div class="aa-card">
+            <div class="aa-card-header">
+              <h3 class="aa-card-title" id="myClassTitle">My Class Students</h3>
+              <button class="aa-btn aa-btn-info" onclick="generateMyClassBulkResult()"><i class="fa fa-file-pdf"></i> Generate Bulk Results</button>
+            </div>
+            <div class="aa-card-body" style="padding:0;">
+              <table class="aa-table" id="myClassTable">
+                <thead><tr><th>Adm No</th><th>Student Name</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Attendance sub-section -->
+          <div class="aa-card mt-4">
+            <div class="aa-card-header">
+              <h3 class="aa-card-title"><i class="fa fa-calendar-check"></i> Class Attendance</h3>
+            </div>
+            <div class="aa-card-body">
+              <div class="d-flex gap-3 align-items-center">
+                <input type="date" id="classAttDate" class="aa-input" style="max-width:200px;" onchange="loadAttendanceRollCall()">
+                <button class="aa-btn aa-btn-primary" onclick="loadAttendanceRollCall()"><i class="fa fa-sync-alt"></i> Load Roll Call</button>
+                <div class="flex-1 text-end">
+                  <button class="aa-btn aa-btn-success" id="btnSaveClassAttendance" style="display:none;" onclick="saveClassAttendance()">Save Attendance</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="aa-card" id="classAttCard" style="display:none;">
+            <div class="aa-card-body" style="padding:0;">
+              <table class="aa-table" id="classAttTable">
+                <thead><tr><th>Adm No</th><th>Name</th><th>Status</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -276,6 +333,18 @@
         if (!AA.user || !AA.settings || !AA.settings.current_term) return setTimeout(initDashboard, 100);
         currentTerm = AA.settings.current_term; currentSession = AA.settings.current_session;
         document.getElementById('currentTermText').textContent = currentTerm + ' — ' + currentSession;
+
+        // If this teacher is also a class teacher, reveal the My Class nav and update role labels
+        if (AA.user.isClassTeacher) {
+          document.getElementById('nav-myclass').style.display = 'flex';
+          document.getElementById('sb-teacher-role').textContent = 'Class & Subject Teacher';
+          document.getElementById('footer-teacher-role').textContent = 'Class & Subject Teacher';
+          var cls = AA.user.classAssigned || '';
+          document.getElementById('stat-myclass-name').textContent = cls || 'N/A';
+          document.getElementById('stat-myclass-label').textContent = 'Students in ' + (cls || 'My Class');
+          document.getElementById('myClassTitle').textContent = cls ? cls + ' — Student Roster' : 'My Class Students';
+        }
+
         loadDashboard();
       }
       initDashboard();
@@ -309,6 +378,100 @@
     // -- Scores --
     var currentScoreStudents = [];
     function loadMySubjectsForScores() { if(mySubjects.length===0) loadDashboard(); }
+
+    // -- My Class (class teacher features) --
+    var myClassStudents = []; // cached for attendance reuse
+    function loadMyClass() {
+      if (!AA.user || !AA.user.isClassTeacher) return;
+      var cls = AA.user.classAssigned;
+      if (!cls) return;
+      // Set today's date on the attendance date picker
+      var attDateEl = document.getElementById('classAttDate');
+      if (attDateEl && !attDateEl.value) attDateEl.valueAsDate = new Date();
+      callServer('principalGetAllStudents', [AA.token], function(data) {
+        myClassStudents = data.filter(function(s) { return String(s.class || s.className) === String(cls); });
+        document.getElementById('stat-myclass-students').textContent = myClassStudents.length;
+        buildTable('myClassTable', [
+          { key: 'admissionNumber' },
+          { key: 'fullName' },
+          { key: 'status', render: function(r) { return formatStatus(r.status); } }
+        ], myClassStudents, function(r) {
+          return '<button class="aa-btn aa-btn-gold aa-btn-xs" onclick="viewStudentReport(\'' + (r.id||r.iD) + '\')">' +
+                 '<i class="fa fa-eye"></i> View Report</button>';
+        });
+      }, null, true);
+    }
+
+    function viewStudentReport(sid) {
+      var rptType = confirm('Generate a Half-Term report instead of Full-Term?\n\nOK = Half-Term\nCancel = Full-Term') ? 'Half Term' : 'Full Term';
+      callServer('principalGetStudentResultPDF', [AA.token, sid, currentTerm, currentSession, rptType], function(res) {
+        if (res.success) openPDFViewer(res.previewUrl, res.downloadUrl, 'Report Card');
+        else showToast(res.message, 'error');
+      }, null, true);
+    }
+
+    function generateMyClassBulkResult() {
+      var cls = AA.user.classAssigned;
+      if (!cls) return showToast('No class assigned.', 'error');
+      if (!currentTerm || !currentSession) return showToast('Session not loaded.', 'error');
+      var rptType = confirm('Generate a Half-Term report instead of Full-Term?\n\nOK = Half-Term\nCancel = Full-Term') ? 'Half Term' : 'Full Term';
+      aaConfirm('Generate ' + rptType + ' bulk results PDF for ' + cls + '?<br><small class="text-muted">This may take a few moments.</small>', function() {
+        showToast('Generating bulk results for ' + cls + '...', 'info');
+        callServer('adminGenerateBulkResult', [AA.token, cls, currentTerm, currentSession, rptType], function(res) {
+          if (res.success) {
+            showToast('Bulk results ready!', 'success');
+            openPDFViewer(res.previewUrl, res.downloadUrl, cls + ' — Bulk Results');
+          } else {
+            showToast(res.message || 'Failed to generate results.', 'error');
+          }
+        }, null, true);
+      });
+    }
+
+    // -- Class Attendance (class teacher) --
+    function loadAttendanceRollCall() {
+      var cls = AA.user && AA.user.classAssigned;
+      var dt = document.getElementById('classAttDate').value;
+      if (!cls || !dt) return;
+      if (myClassStudents.length === 0) {
+        // Students not yet loaded; fetch then retry
+        loadMyClass();
+        return setTimeout(loadAttendanceRollCall, 600);
+      }
+      document.getElementById('classAttCard').style.display = 'block';
+      callServer('teacherGetAttendanceByDate', [AA.token, cls, dt], function(attRecords) {
+        var tbody = document.querySelector('#classAttTable tbody');
+        tbody.innerHTML = '';
+        myClassStudents.forEach(function(st) {
+          var sid = st.id || st.iD;
+          var rec = attRecords.find(function(r) { return String(r.studentID || r.studentId) === String(sid); });
+          var status = rec ? rec.status : 'Present';
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + (st.admissionNumber || '') + '</td>' +
+            '<td>' + st.fullName + '</td>' +
+            '<td><select id="clsatt_' + sid + '" class="aa-select" style="padding:4px;width:120px;">' +
+            '<option value="Present"' + (status === 'Present' ? ' selected' : '') + '>Present</option>' +
+            '<option value="Absent"' + (status === 'Absent' ? ' selected' : '') + '>Absent</option>' +
+            '<option value="Late"' + (status === 'Late' ? ' selected' : '') + '>Late</option>' +
+            '</select></td>';
+          tbody.appendChild(tr);
+        });
+        document.getElementById('btnSaveClassAttendance').style.display = myClassStudents.length > 0 ? 'inline-block' : 'none';
+      }, null, true);
+    }
+
+    function saveClassAttendance() {
+      var cls = AA.user && AA.user.classAssigned;
+      var dt = document.getElementById('classAttDate').value;
+      if (!cls || !dt) return showToast('Please select a date.', 'error');
+      var records = myClassStudents.map(function(st) {
+        var sid = st.id || st.iD;
+        return { studentId: sid, status: document.getElementById('clsatt_' + sid).value };
+      });
+      callServer('teacherMarkAttendance', [AA.token, cls, dt, records, currentTerm, currentSession], function(res) {
+        showToast(res.message, res.success ? 'success' : 'error');
+      }, null, true);
+    }
 
     function loadStudentsForScoring() {
       var subId = document.getElementById('scoreSubjectSelect').value;

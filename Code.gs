@@ -350,8 +350,13 @@ function getCurrentUser(token) {
     if (cls) assignedClass = cls.className;
   }
 
+  var isClassTeacher = u.role === 'teacher' && !!classes && classes.some(function(c) {
+    return String(c.classTeacherId || c.classTeacherID) === String(u.id);
+  });
+
   return { success: true, user: { id: u.id, fullName: u.fullName, email: u.email,
-    role: u.role, section: u.section, classAssigned: assignedClass, 
+    role: u.role, section: u.section, classAssigned: assignedClass,
+    isClassTeacher: isClassTeacher,
     profilePicture: u.profilePicture, phone: u.phone } };
 }
 
@@ -574,7 +579,7 @@ function adminRejectPayment(token, payId) { requirePlan('deluxe', token); var s 
 function adminReversePayment(token, payId, reason) { requirePlan('deluxe', token); var s = requireRole(token,'admin'); return reversePayment(payId, reason, s.userId); }
 function adminRecordCreditNote(token, data) { requirePlan('deluxe', token); var s = requireRole(token,'admin'); return recordCreditNote(data, s.userId); }
 function adminGenerateResult(token, sid, term, sess, reportType) { requireRole(token,['admin','admin_assistant']); return generateResultPDF(sid, term, sess, reportType); }
-function adminGenerateBulkResult(token, className, term, sess, reportType) { requireRole(token,['admin','admin_assistant','principal','vp','headteacher']); return generateBulkClassResultPDF(className, term, sess, reportType); }
+function adminGenerateBulkResult(token, className, term, sess, reportType) { requireRole(token,['admin','admin_assistant','principal','vp','headteacher','teacher']); return generateBulkClassResultPDF(className, term, sess, reportType); }
 function adminGenerateReceipt(token, payId) { requirePlan('deluxe', token); requireRole(token,'admin'); return generateReceiptPDF(payId); }
 function adminGetAllLessonPlans(token, term, sess) { requirePlan('standard', token); requireRole(token,['admin','admin_assistant']); return getAllLessonPlans(term, sess); }
 function adminApproveLessonPlan(token, planId, note) { requirePlan('standard', token); var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('APPROVE_LESSON', {planId:planId, note:note}, s.userId); return approveLessonPlan(s.userId, planId, note); }
@@ -700,7 +705,7 @@ function principalGetStudentReport(token, sid, term, sess) {
   return generateStudentReport(sid, term, sess);
 }
 function principalGetStudentResultPDF(token, sid, term, sess, reportType) {
-  requireRole(token, ['principal','vp','headteacher']);
+  requireRole(token, ['principal','vp','headteacher','teacher']);
   return generateResultPDF(sid, term, sess, reportType);
 }
 function principalGetLessonPlans(token, term, sess) {
@@ -736,7 +741,7 @@ function principalGetSubjectAnalytics(token, className, term, sess) {
   return getSubjectPerformanceAnalytics(className, term, sess);
 }
 function principalGetAllStudents(token) {
-  var s = requireRole(token, ['principal','vp','headteacher']);
+  var s = requireRole(token, ['principal','vp','headteacher','teacher']);
   var students = getAllStudents();
   return s.section === 'both' ? students : students.filter(function(st) { return st.section === s.section; });
 }
