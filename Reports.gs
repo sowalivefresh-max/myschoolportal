@@ -149,8 +149,9 @@ function generateStudentReport(studentId, term, session, reportType) {
   // Fetch Class Teacher Signature from User Profile
   var classObj = getAllClasses().find(function(c) { return c.className === className; });
   var ctSig = '';
-  if (classObj && classObj.classTeacherId) {
-    var teacher = getUserById(classObj.classTeacherId); // Fixed: getUser -> getUserById
+  var cTid = classObj ? (classObj.classTeacherId || classObj.classTeacherID) : null;
+  if (cTid) {
+    var teacher = getUserById(cTid); // Fixed: getUser -> getUserById
     if (teacher && teacher.signature) ctSig = teacher.signature;
   }
 
