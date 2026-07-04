@@ -1068,15 +1068,25 @@
         }
       }
 
-      // Section selects in forms: lock when single-section
+      // Section selects in forms: lock and auto-populate when single-section
       var sectionSelects = document.querySelectorAll('select[name="section"]');
       sectionSelects.forEach(function(sel) {
         if (isSingleSection) {
           var lockVal = isPrimaryOnly ? 'primary' : 'high';
+          // Hide options that don't belong to this institution type
+          Array.from(sel.options).forEach(function(opt) {
+            if (opt.value === 'both' || opt.value === (isPrimaryOnly ? 'high' : 'primary')) {
+              opt.style.display = 'none';
+            } else {
+              opt.style.display = '';
+            }
+          });
           sel.value = lockVal;
           sel.disabled = true;
           sel.title = 'Locked by Institution Type setting';
         } else {
+          // Dual-section: restore all options and enable
+          Array.from(sel.options).forEach(function(opt) { opt.style.display = ''; });
           sel.disabled = false;
           sel.title = '';
         }
