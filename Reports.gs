@@ -150,9 +150,20 @@ function generateStudentReport(studentId, term, session, reportType) {
   var classObj = getAllClasses().find(function(c) { return c.className === className; });
   var ctSig = '';
   if (classObj && classObj.classTeacherId) {
-    var teacher = getUser(classObj.classTeacherId);
+    var teacher = getUserById(classObj.classTeacherId); // Fixed: getUser -> getUserById
     if (teacher && teacher.signature) ctSig = teacher.signature;
   }
+
+  // Fetch Principal and Head Teacher from Users
+  var allUsers = getAllUsers();
+  var principal = allUsers.find(function(u) { return String(u.role).toLowerCase() === 'principal'; });
+  var headTeacher = allUsers.find(function(u) { return String(u.role).toLowerCase() === 'head_teacher'; });
+
+  var pName = principal ? principal.fullName : (settings.principal_name || 'The Principal');
+  var pSig = principal ? principal.signature : (settings.principal_signature || '');
+  
+  var htName = headTeacher ? headTeacher.fullName : (settings.head_teacher_name || 'The Head Teacher');
+  var htSig = headTeacher ? headTeacher.signature : (settings.head_teacher_signature || '');
 
   return {
     success: true,
@@ -176,12 +187,12 @@ function generateStudentReport(studentId, term, session, reportType) {
     settings: {
       schoolName: settings.school_name || 'My School',
       schoolMotto: settings.school_motto || '',
-      principalName: settings.principal_name || 'The Principal',
-      headTeacherName: settings.head_teacher_name || 'The Head Teacher',
+      principalName: pName,
+      headTeacherName: htName,
       currentTerm: settings.current_term || term,
       nextTermBegins: settings.next_term_begins || '',
-      principal_signature: settings.principal_signature || '',
-      head_teacher_signature: settings.head_teacher_signature || '',
+      principal_signature: pSig,
+      head_teacher_signature: htSig,
       class_teacher_signature: ctSig || settings.class_teacher_signature || ''
     }
   };
