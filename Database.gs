@@ -105,9 +105,24 @@ function deleteUser(userId) {
 // ─── STUDENTS ───────────────────────────────────────────────
 
 function getAllStudents() {
-  return getSheetData('Students').map(function(s) {
+  var students = getSheetData('Students').map(function(s) {
     if (s) s.photoUrl = s.photoURL || s.photoUrl || '';
     return s;
+  });
+  var type = (getSettings().institution_type || 'both').toLowerCase().trim();
+  if (type === 'both') return students;
+  // Normalize all known section spellings to canonical 'high' or 'primary'
+  function normSec(sec) {
+    var v = String(sec || '').toLowerCase().trim();
+    if (v === 'high' || v === 'highschool' || v === 'high school' || v === 'secondary') return 'high';
+    if (v === 'primary' || v === 'primaryschool' || v === 'primary school') return 'primary';
+    return v;
+  }
+  var target = (type === 'secondary') ? 'high' : 'primary';
+  return students.filter(function(s) {
+    var sec = normSec(s.section);
+    // Include student if their section matches OR if section is empty/unset (fallback to institution)
+    return sec === target || sec === '' || sec === 'both';
   });
 }
 
