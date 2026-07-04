@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -170,7 +170,7 @@
                   <i class="fa fa-search"></i>
                   <input type="text" id="search-users" class="aa-input" placeholder="Search users..." onkeyup="filterTable('search-users', 'usersTable')">
                 </div>
-                <button class="aa-btn aa-btn-primary" onclick="openModal('userModal');resetForm('userForm');document.getElementById('userId').value='';document.getElementById('userSigPreview').innerHTML='<i class=\'fa fa-signature text-muted\'></i>'"><i class="fa fa-plus"></i> Add User</button>
+                <button class="aa-btn aa-btn-primary" onclick="openModal('userModal');resetForm('userForm');document.getElementById('userId').value='';document.getElementById('userSigPreview').innerHTML='<i class=\'fa fa-signature text-muted\'></i>';applyInstitutionFilter(institutionType);"><i class="fa fa-plus"></i> Add User</button>
               </div>
             </div>
             <div class="aa-card-body" style="padding:0;">
@@ -1077,8 +1077,12 @@
           Array.from(sel.options).forEach(function(opt) {
             if (opt.value === 'both' || opt.value === (isPrimaryOnly ? 'high' : 'primary')) {
               opt.style.display = 'none';
+              opt.hidden = true;
+              opt.disabled = true;
             } else {
               opt.style.display = '';
+              opt.hidden = false;
+              opt.disabled = false;
             }
           });
           sel.value = lockVal;
@@ -1086,7 +1090,11 @@
           sel.title = 'Locked by Institution Type setting';
         } else {
           // Dual-section: restore all options and enable
-          Array.from(sel.options).forEach(function(opt) { opt.style.display = ''; });
+          Array.from(sel.options).forEach(function(opt) { 
+            opt.style.display = ''; 
+            opt.hidden = false;
+            opt.disabled = false;
+          });
           sel.disabled = false;
           sel.title = '';
         }
