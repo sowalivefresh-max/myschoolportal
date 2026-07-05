@@ -10,6 +10,16 @@ var AA = {
   user:  null,
   settings: {},
 
+  escapeHTML: function(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  },
+
   init: function() {
     // Read token from URL ?token=...
     var params = new URLSearchParams(window.location.search);
@@ -323,7 +333,7 @@ function buildTable(tableId, columns, rows, actionFn) {
   }
   tbody.innerHTML = rows.map(function(row, i) {
     var cells = columns.map(function(col) {
-      var val = col.render ? col.render(row) : (row[col.key] !== undefined ? row[col.key] : '');
+      var val = col.render ? col.render(row) : (row[col.key] !== undefined ? AA.escapeHTML(row[col.key]) : '');
       return '<td>' + (val !== null && val !== undefined ? val : '') + '</td>';
     }).join('');
     var actionCell = actionFn ? '<td>' + actionFn(row, i) + '</td>' : '';
