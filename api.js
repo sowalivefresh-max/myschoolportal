@@ -29,13 +29,8 @@ async function runBackendAction(action, args = []) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const json = await response.json();
-    
-    // Unwrap the Google Apps Script doPost payload
-    if (json.success === false) {
-      throw new Error(json.message || "Unknown server error");
-    }
-    return json.data;
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error("API Error:", error);
     throw error;
