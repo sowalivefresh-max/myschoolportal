@@ -365,7 +365,7 @@
         var sSel = document.getElementById('scoreSubjectSelect'); sSel.innerHTML='<option value="">-- Select Subject --</option>';
         data.forEach(function(s) {
           var id = s.id||s.iD;
-          var opt = '<option value="'+id+'">'+s.subjectName+' ('+(s.class||'All')+')</option>';
+          var opt = '<option value="'+id+'">'+AA.escapeHTML(s.subjectName)+' ('+AA.escapeHTML(s.class||'All')+')</option>';
           pSel.innerHTML += opt; sSel.innerHTML += opt;
         });
       }, null, true);
@@ -447,8 +447,8 @@
           var rec = attRecords.find(function(r) { return String(r.studentID || r.studentId) === String(sid); });
           var status = rec ? rec.status : 'Present';
           var tr = document.createElement('tr');
-          tr.innerHTML = '<td>' + (st.admissionNumber || '') + '</td>' +
-            '<td>' + st.fullName + '</td>' +
+          tr.innerHTML = '<td>' + AA.escapeHTML(st.admissionNumber || '') + '</td>' +
+            '<td>' + AA.escapeHTML(st.fullName) + '</td>' +
             '<td><select id="clsatt_' + sid + '" class="aa-select" style="padding:4px;width:120px;">' +
             '<option value="Present"' + (status === 'Present' ? ' selected' : '') + '>Present</option>' +
             '<option value="Absent"' + (status === 'Absent' ? ' selected' : '') + '>Absent</option>' +
@@ -494,7 +494,7 @@
             if(sc.id||sc.iD) anyScores = true;
 
             var tr = document.createElement('tr');
-            tr.innerHTML = '<td>'+(st.admissionNumber||'')+'</td><td>'+st.fullName+'</td>'+
+            tr.innerHTML = '<td>'+AA.escapeHTML(st.admissionNumber||'')+'</td><td>'+AA.escapeHTML(st.fullName)+'</td>'+
               '<td><input type="number" id="ca1_'+sid+'" class="aa-input" style="padding:4px;" value="'+(sc.ca1||sc.cA1||0)+'" '+(locked?'disabled':'')+'></td>'+
               '<td><input type="number" id="ca2_'+sid+'" class="aa-input" style="padding:4px;" value="'+(sc.ca2||sc.cA2||0)+'" '+(locked?'disabled':'')+'></td>'+
               '<td><input type="number" id="ca3_'+sid+'" class="aa-input" style="padding:4px;" value="'+(sc.ca3||sc.cA3||0)+'" '+(locked?'disabled':'')+'></td>'+

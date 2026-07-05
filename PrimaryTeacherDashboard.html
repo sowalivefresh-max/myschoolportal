@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -390,7 +390,7 @@
         var pSel = document.getElementById('planSubject'); pSel.innerHTML='';
         data.forEach(function(s) {
           var id = s.id||s.iD;
-          var opt = '<option value="'+id+'">'+s.subjectName+'</option>';
+          var opt = '<option value="'+id+'">'+AA.escapeHTML(s.subjectName)+'</option>';
           sSel.innerHTML += opt; pSel.innerHTML += opt;
         });
       });
@@ -413,7 +413,7 @@
           var rec = attRecords.find(function(r){ return String(r.studentID||r.studentId) === String(sid); });
           var status = rec ? rec.status : 'Present';
           var tr = document.createElement('tr');
-          tr.innerHTML = '<td>'+st.fullName+'</td>'+
+          tr.innerHTML = '<td>'+AA.escapeHTML(st.fullName)+'</td>'+
             '<td><select id="att_'+sid+'" class="aa-select" style="padding:4px;width:120px;">'+
             '<option value="Present" '+(status==='Present'?'selected':'')+'>Present</option>'+
             '<option value="Absent" '+(status==='Absent'?'selected':'')+'>Absent</option>'+
@@ -452,7 +452,7 @@
           if(sc.id||sc.iD) anyScores = true;
 
           var tr = document.createElement('tr');
-          tr.innerHTML = '<td>'+st.fullName+'</td>'+
+          tr.innerHTML = '<td>'+AA.escapeHTML(st.fullName)+'</td>'+
             '<td><input type="number" id="ca1_'+sid+'" class="aa-input" style="padding:4px;" value="'+(sc.ca1||sc.cA1||0)+'" '+(locked?'disabled':'')+'></td>'+
             '<td><input type="number" id="ca2_'+sid+'" class="aa-input" style="padding:4px;" value="'+(sc.ca2||sc.cA2||0)+'" '+(locked?'disabled':'')+'></td>'+
             '<td><input type="number" id="ca3_'+sid+'" class="aa-input" style="padding:4px;" value="'+(sc.ca3||sc.cA3||0)+'" '+(locked?'disabled':'')+'></td>'+
@@ -513,7 +513,7 @@
       var sel = document.getElementById('traitStudentSelect');
       sel.innerHTML = '<option value="">-- Select Student --</option>';
       myStudents.forEach(function(s) {
-        sel.innerHTML += '<option value="'+(s.id||s.iD)+'">'+s.fullName+' ('+(s.admissionNumber||'') + ')</option>';
+        sel.innerHTML += '<option value="'+(s.id||s.iD)+'">'+AA.escapeHTML(s.fullName)+' ('+AA.escapeHTML(s.admissionNumber||'') + ')</option>';
       });
     }
 

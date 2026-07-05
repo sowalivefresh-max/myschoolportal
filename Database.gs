@@ -6,7 +6,7 @@
 // ─── USERS ──────────────────────────────────────────────────
 
 function getAllUsers() {
-  var users = getSheetData('Users');
+  var users = getSheetData('Users', true);
   users.forEach(function(u) { delete u.passwordHash; });
   return users;
 }
@@ -56,6 +56,7 @@ function createUser(data) {
     new Date().toISOString(), data.signature || '', salt
   ]);
   logAudit('system', 'CREATE_USER', 'Created user: ' + data.email);
+  clearSheetCache('Users');
   return { success: true, id: id, message: 'User created.' };
 }
 
@@ -90,6 +91,7 @@ function updateUser(userId, data) {
   if (data.profilePicture !== undefined) { var c = sheet.getRange(row, 10); c.clearDataValidations(); c.setValue(data.profilePicture); SpreadsheetApp.flush(); }
   if (data.phone !== undefined) sheet.getRange(row, 11).setValue(data.phone);
   if (data.signature !== undefined) sheet.getRange(row, 13).setValue(data.signature);
+  clearSheetCache('Users');
   return { success: true, message: 'User updated.' };
 }
 
@@ -99,6 +101,7 @@ function deleteUser(userId) {
   if (row === -1) return { success: false, message: 'User not found.' };
   sheet.deleteRow(row);
   logAudit('system', 'DELETE_USER', 'Deleted user ID: ' + userId);
+  clearSheetCache('Users');
   return { success: true, message: 'User deleted.' };
 }
 
@@ -169,6 +172,30 @@ function createStudent(data) {
   return { success: true, id: id, message: 'Student created.' };
 }
 
+function bulkCreateStudents(students) {
+  var sheet = getSpreadsheet().getSheetByName('Students');
+  var newRows = [];
+  var count = 0;
+  for (var i = 0; i < students.length; i++) {
+    var data = students[i];
+    if (!data.fullName) continue;
+    var id = generateId();
+    newRows.push([
+      id, data.fullName.trim(), data.admissionNumber || '',
+      data.className || '', data.section || 'both',
+      data.school || '', data.parentId || '',
+      data.gender || '', data.dateOfBirth || '',
+      data.photoUrl || '', new Date().toISOString(), 'active'
+    ]);
+    count++;
+  }
+  if (newRows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, 12).setValues(newRows);
+    clearSheetCache('Students');
+    logAudit('system', 'BULK_CREATE_STUDENTS', 'Uploaded ' + count + ' students');
+  }
+  return { success: true, message: count + ' students successfully uploaded.' };
+}
 function updateStudent(studentId, data) {
   // ── Input validation (only fields that are being updated) ───
   var v = validateInput(data, [
@@ -228,7 +255,7 @@ function getStudentsByClass(className) {
 // ─── CLASSES ────────────────────────────────────────────────
 
 function getAllClasses() { 
-  var classes = getSheetData('Classes'); 
+  var classes = getSheetData('Classes', true); 
   var type = getSettings().institution_type || 'both';
   if (type === 'primary') return classes.filter(function(c) { return String(c.section).toLowerCase() === 'primary'; });
   if (type === 'secondary') return classes.filter(function(c) { return String(c.section).toLowerCase() === 'high'; });
@@ -253,6 +280,7 @@ function updateClass(classId, data) {
   if (data.school !== undefined) sheet.getRange(row, 4).setValue(data.school);
   if (data.classTeacherId !== undefined) sheet.getRange(row, 5).setValue(data.classTeacherId);
   if (data.academicSession !== undefined) sheet.getRange(row, 6).setValue(data.academicSession);
+  clearSheetCache('Classes');
   return { success: true, message: 'Class updated.' };
 }
 
@@ -261,13 +289,14 @@ function deleteClass(classId) {
   var row = findRowById(sheet, classId);
   if (row === -1) return { success: false, message: 'Class not found.' };
   sheet.deleteRow(row);
+  clearSheetCache('Classes');
   return { success: true, message: 'Class deleted.' };
 }
 
 // ─── SUBJECTS ───────────────────────────────────────────────
 
 function getAllSubjects() { 
-  var subjects = getSheetData('Subjects'); 
+  var subjects = getSheetData('Subjects', true); 
   var type = getSettings().institution_type || 'both';
   if (type === 'primary') return subjects.filter(function(s) { return String(s.section).toLowerCase() === 'primary'; });
   if (type === 'secondary') return subjects.filter(function(s) { return String(s.section).toLowerCase() === 'high'; });
@@ -288,6 +317,7 @@ function createSubject(data) {
   var id = generateId();
   sheet.appendRow([id, data.subjectName.trim(), data.section || 'high',
     data.className || '', data.assignedTeacherId || '']);
+  clearSheetCache('Subjects');
   return { success: true, id: id, message: 'Subject created.' };
 }
 
@@ -300,6 +330,7 @@ function updateSubject(subjectId, data) {
   var cls = data.className !== undefined ? data.className : data.class;
   if (cls !== undefined) sheet.getRange(row, 4).setValue(cls);
   if (data.assignedTeacherId !== undefined) sheet.getRange(row, 5).setValue(data.assignedTeacherId);
+  clearSheetCache('Subjects');
   return { success: true, message: 'Subject updated.' };
 }
 
@@ -308,6 +339,7 @@ function deleteSubject(subjectId) {
   var row = findRowById(sheet, subjectId);
   if (row === -1) return { success: false, message: 'Subject not found.' };
   sheet.deleteRow(row);
+  clearSheetCache('Subjects');
   return { success: true, message: 'Subject deleted.' };
 }
 
@@ -581,6 +613,10 @@ function getAffectiveRecord(studentId, term, session) {
 // ─── SETTINGS ────────────────────────────────────────────────
 
 function getSettings() {
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get('DB_Settings');
+  if (cached) { try { return JSON.parse(cached); } catch(e){} }
+
   var sheet = getSpreadsheet().getSheetByName('Settings');
   if (!sheet) return {};
   var data = sheet.getDataRange().getValues();
@@ -588,6 +624,7 @@ function getSettings() {
   for (var i = 1; i < data.length; i++) {
     if (data[i][0]) settings[String(data[i][0])] = String(data[i][1]);
   }
+  try { cache.put('DB_Settings', JSON.stringify(settings), 21600); } catch(e){}
   return settings;
 }
 
@@ -601,7 +638,8 @@ function updateSettings(newSettings) {
     }
     if (!found) sheet.appendRow([key, newSettings[key]]);
   }
-  return { success: true, message: 'Settings updated.' };
+  clearSheetCache('Settings');
+  return { success: true, message: 'Settings updated successfully.' };
 }
 
 function updateGradingRule(data) {
@@ -957,3 +995,4 @@ function bulkSaveScores(scoresArray) {
   logAudit('system', 'BULK_SAVE_SCORES', 'Saved ' + count + ' scores, ' + errs + ' errors');
   return { success: true, message: count + ' scores saved successfully.' + (errs > 0 ? ' (' + errs + ' skipped/locked)' : '') };
 }
+

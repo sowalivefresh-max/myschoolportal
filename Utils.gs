@@ -136,7 +136,17 @@ function rowToObject(headers, row) {
  * Get all data rows from a named sheet as an array of objects.
  * Skips empty rows.
  */
-function getSheetData(sheetName) {
+function getSheetData(sheetName, useCache) {
+  var cache = CacheService.getScriptCache();
+  var cacheKey = 'DB_' + sheetName;
+  
+  if (useCache) {
+    var cached = cache.get(cacheKey);
+    if (cached) {
+      try { return JSON.parse(cached); } catch(e) {}
+    }
+  }
+
   var ss = getSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) return [];
@@ -151,7 +161,26 @@ function getSheetData(sheetName) {
       results.push(rowToObject(headers, data[i]));
     }
   }
+  
+  if (useCache) {
+    try {
+      var jsonString = JSON.stringify(results);
+      if (jsonString.length < 100000) { // Max size for CacheService is 100KB per value
+        cache.put(cacheKey, jsonString, 1800); // 30 minutes
+      }
+    } catch(e) {}
+  }
+  
   return results;
+}
+
+/**
+ * Clears the cache for a specific sheet.
+ */
+function clearSheetCache(sheetName) {
+  try {
+    CacheService.getScriptCache().remove('DB_' + sheetName);
+  } catch(e) {}
 }
 
 /**
@@ -380,6 +409,17 @@ function logAudit(userId, action, details) {
   }
 }
 
+/**
+ * Fetch the latest 500 audit logs.
+ */
+function getAuditLogs() {
+  var logs = getSheetData('AuditLogs');
+  // Sort descending by timestamp (assume timestamp is column 5 or key 'timestamp' / 'date')
+  // We can just reverse since appendRow adds to the bottom.
+  logs.reverse();
+  return logs.slice(0, 500);
+}
+
 // ─── Image Utility ────────────────────────────────────────────
 
 /**
@@ -464,4 +504,45 @@ function ordinal(n) {
   var s = ['th','st','nd','rd'];
   var v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// ─── Automated Backup ───────────────────────────────────────
+
+/**
+ * Creates a copy of the database file in a "Database Backups" folder.
+ */
+function createDatabaseBackup() {
+  try {
+    var ss = getSpreadsheet();
+    var name = ss.getName();
+    var dateStr = new Date().toISOString().split('T')[0];
+    var backupName = name + ' - Backup ' + dateStr;
+    
+    var file = DriveApp.getFileById(ss.getId());
+    var folder = file.getParents().hasNext() ? file.getParents().next() : DriveApp.getRootFolder();
+    
+    var backupFolders = folder.getFoldersByName('Database Backups');
+    var backupFolder = backupFolders.hasNext() ? backupFolders.next() : folder.createFolder('Database Backups');
+    
+    file.makeCopy(backupName, backupFolder);
+    logAudit('system', 'BACKUP_CREATED', 'Created backup: ' + backupName);
+  } catch(e) {
+    Logger.log('Backup failed: ' + e);
+  }
+}
+
+/**
+ * Installs a weekly trigger to run the backup every Sunday at 2 AM.
+ */
+function setupBackupTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  var exists = triggers.some(function(t) { return t.getHandlerFunction() === 'createDatabaseBackup'; });
+  if (!exists) {
+    ScriptApp.newTrigger('createDatabaseBackup')
+      .timeBased()
+      .everyWeeks(1)
+      .onWeekDay(ScriptApp.WeekDay.SUNDAY)
+      .atHour(2)
+      .create();
+  }
 }

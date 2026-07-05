@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -104,6 +104,7 @@
           <div class="aa-tab" data-tab="tab-grading" data-onload="loadGrading"></div>
           <div class="aa-tab" data-tab="tab-finance" data-onload="loadFinance"></div>
           <div class="aa-tab" data-tab="tab-reports" data-onload="loadReports"></div>
+          <div class="aa-tab" data-tab="tab-audit" data-onload="loadAuditLogs"></div>
           <div class="aa-tab" data-tab="tab-settings" data-onload="loadSettings"></div>
         </div>
 
@@ -228,7 +229,7 @@
                   <input type="text" id="search-students" class="aa-input" placeholder="Search students..." onkeyup="filterTable('search-students', 'studentsTable')">
                 </div>
                 <button class="aa-btn aa-btn-outline" onclick="openBulkModal('students')"><i class="fa fa-upload"></i> Bulk Import</button>
-                <button class="aa-btn aa-btn-primary" onclick="openModal('studentModal');resetForm('studentForm');document.getElementById('studentId').value='';applyInstitutionFilter(institutionType);"><i class="fa fa-plus"></i> Add Student</button>
+                <button class="aa-btn aa-btn-secondary" onclick="openModal('bulkStudentModal')"><i class="fa fa-upload"></i> Bulk Upload</button>`n                <button class="aa-btn aa-btn-primary" onclick="openModal('studentModal';resetForm('studentForm');document.getElementById('studentId').value='';applyInstitutionFilter(institutionType);"><i class="fa fa-plus"></i> Add Student</button>
               </div>
             </div>
             <div class="aa-card-body" style="padding:0;">
@@ -370,6 +371,30 @@
               <div class="aa-card-header"><h3 class="aa-card-title">School Performance</h3></div>
               <div class="aa-card-body" id="performance-summary">
                 <p class="text-muted">Loading performance data...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Audit Logs -->
+        <div class="aa-tab-content" data-group="admin-tabs" data-id="tab-audit">
+          <div class="aa-card">
+            <div class="aa-card-header">
+              <h3 class="aa-card-title">Audit Logs (Last 500)</h3>
+              <div class="d-flex gap-2">
+                <div class="aa-search-box">
+                  <i class="fa fa-search"></i>
+                  <input type="text" id="search-audit" class="aa-input" placeholder="Search logs..." onkeyup="filterTable('search-audit', 'auditTable')">
+                </div>
+                <button class="aa-btn aa-btn-outline" onclick="loadAuditLogs()"><i class="fa fa-sync"></i> Refresh</button>
+              </div>
+            </div>
+            <div class="aa-card-body" style="padding:0;">
+              <div class="aa-table-wrap">
+                <table class="aa-table" id="auditTable">
+                  <thead><tr><th>Date & Time</th><th>User ID</th><th>Action</th><th>Details</th></tr></thead>
+                  <tbody></tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -569,6 +594,30 @@
       <div class="aa-modal-footer">
         <button class="aa-btn aa-btn-outline" onclick="closeModal('userModal')">Cancel</button>
         <button class="aa-btn aa-btn-primary" onclick="saveUser()">Save User</button>
+      </div>
+    </div>
+  </div>
+
+    <!-- Bulk Student Modal -->
+  <div id="bulkStudentModal" class="aa-modal">
+    <div class="aa-modal-content" style="max-width:500px;">
+      <div class="aa-modal-header">
+        <h3 class="aa-modal-title">Bulk Upload Students</h3>
+        <button class="aa-modal-close" onclick="closeModal('bulkStudentModal')">&times;</button>
+      </div>
+      <div class="aa-modal-body">
+        <div class="aa-alert aa-alert-info">
+          Upload a CSV file with the following headers (case-insensitive):<br>
+          <b>FullName, AdmissionNumber, ClassName, Section, Gender</b>
+        </div>
+        <div class="aa-form-group">
+          <label class="aa-label">CSV File</label>
+          <input type="file" id="bulkStudentFile" class="aa-input" accept=".csv">
+        </div>
+      </div>
+      <div class="aa-modal-footer">
+        <button class="aa-btn aa-btn-outline" onclick="closeModal('bulkStudentModal')">Cancel</button>
+        <button class="aa-btn aa-btn-primary" onclick="uploadBulkStudents()">Upload CSV</button>
       </div>
     </div>
   </div>
@@ -1213,6 +1262,69 @@
       }
     }
     
+        function uploadBulkStudents() {
+      var fileInput = document.getElementById('bulkStudentFile');
+      if (!fileInput.files || !fileInput.files[0]) {
+        showToast('Please select a CSV file.', 'warning');
+        return;
+      }
+      var file = fileInput.files[0];
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var text = e.target.result;
+        var lines = text.split('\n');
+        if (lines.length < 2) {
+          showToast('File is empty or invalid.', 'error');
+          return;
+        }
+        var headers = lines[0].split(',').map(function(h){return h.trim().toLowerCase();});
+        var students = [];
+        for (var i = 1; i < lines.length; i++) {
+          var row = lines[i];
+          if (!row.trim()) continue;
+          // Simple CSV parse handling quotes (optional for advanced, this is basic split)
+          var values = row.split(','); 
+          var student = {};
+          for (var j = 0; j < headers.length; j++) {
+            if (values[j] !== undefined) {
+              var val = values[j].trim();
+              if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+              if (headers[j].includes('name')) student.fullName = val;
+              else if (headers[j].includes('admission') || headers[j] === 'regno') student.admissionNumber = val;
+              else if (headers[j].includes('class')) student.className = val;
+              else if (headers[j].includes('section')) student.section = val.toLowerCase();
+              else if (headers[j].includes('gender')) student.gender = val;
+            }
+          }
+          if (student.fullName) students.push(student);
+        }
+        if (students.length === 0) {
+          showToast('No valid students found in CSV.', 'error');
+          return;
+        }
+        
+        var btn = document.querySelector('#bulkStudentModal .aa-btn-primary');
+        var originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading...';
+        btn.disabled = true;
+        
+        callServer('adminBulkCreateStudents', [AA.token, students], function(res) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          if (res.success) {
+            showToast(res.message, 'success');
+            closeModal('bulkStudentModal');
+            loadStudents();
+          } else {
+            showToast(res.message, 'error');
+          }
+        }, function(err) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        });
+      };
+      reader.readAsText(file);
+    }
     function editStudent(id) {
       var s = globalStudents.find(function(x) { return String(x.id||x.iD) === String(id); });
       if(!s) return;
@@ -1631,6 +1743,18 @@
       reader.readAsText(fileInput.files[0]);
     }
 
+    // --- AUDIT LOGS ---
+    function loadAuditLogs() {
+      callServer('adminGetAuditLogs', [AA.token], function(data) {
+        buildTable('auditTable', [
+          { key: 'timestamp', render: function(r){ return formatDate(r.timestamp || r.date || r[4] || ''); } },
+          { key: 'userId', render: function(r){ return AA.escapeHTML(r.userId || r[1] || 'system'); } },
+          { key: 'action', render: function(r){ return '<span class="aa-badge aa-badge-info">' + AA.escapeHTML(r.action || r[2] || '') + '</span>'; } },
+          { key: 'details', render: function(r){ return AA.escapeHTML(r.details || r[3] || ''); } }
+        ], data);
+      }, null, true);
+    }
+    
     // --- SETTINGS ---
     function loadSettings() {
       callServer('adminGetSettings', [AA.token], function(s) {
@@ -1807,3 +1931,6 @@
   </script>
 </body>
 </html>
+
+
+

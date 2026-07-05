@@ -58,6 +58,7 @@ function getActionWhitelist() {
     'adminGetStudents':           adminGetStudents,
     'adminCreateStudent':         adminCreateStudent,
     'adminBulkCreateStudents':    adminBulkCreateStudents,
+    'adminBulkCreateStudents':    adminBulkCreateStudents,
     'adminUpdateStudent':         adminUpdateStudent,
     'adminDeleteStudent':         adminDeleteStudent,
     'adminGetClasses':            adminGetClasses,
@@ -166,7 +167,7 @@ function getActionWhitelist() {
     'accountsGetStudentLedger':   accountsGetStudentLedger,
     'accountsGenerateReceipt':    accountsGenerateReceipt,
     'accountsApprovePayment':     accountsApprovePayment,
-    'accountsRejectPayment':      accountsRejectPayment,
+    'accountsRejectPayment':     accountsRejectPayment,
     'accountsReversePayment':     accountsReversePayment,
     'accountsRecordCreditNote':   accountsRecordCreditNote,
     'accountsGetExpenses':        accountsGetExpenses,
@@ -519,6 +520,7 @@ function requestPasswordReset(email) {
 function adminGetStudents(token) { requireRole(token,['admin','admin_assistant']); return getAllStudents(); }
 function adminCreateStudent(token, data) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('CREATE_STUDENT', data, s.userId); return createStudent(data); }
 function adminBulkCreateStudents(token, data) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('BULK_CREATE_STUDENTS', data, s.userId); return bulkCreateStudents(data); }
+function adminBulkCreateStudents(token, students) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return { success: false, message: 'Admin Assistants cannot bulk upload.' }; return bulkCreateStudents(students); }
 function adminUpdateStudent(token, sid, data) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('UPDATE_STUDENT', {sid: sid, data: data}, s.userId); return updateStudent(sid, data); }
 function adminDeleteStudent(token, sid) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('DELETE_STUDENT', {sid: sid}, s.userId); return deleteStudent(sid); }
 function adminGetClasses(token) { requireRole(token,['admin','admin_assistant']); return getAllClasses(); }
@@ -545,7 +547,7 @@ function adminUpdateSettings(token, data) {
 function adminGetScores(token, filters) { requireRole(token,['admin','admin_assistant']); return getScores(filters); }
 function adminLockScores(token, filters) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('LOCK_SCORES', filters, s.userId); return lockScores(filters); }
 function adminUnlockScores(token, filters) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('UNLOCK_SCORES', filters, s.userId); return unlockScores(filters); }
-function adminGetAuditLogs(token) { requirePlan('deluxe', token); requireRole(token,['admin','admin_assistant']); return getSheetData('AuditLogs'); }
+function adminGetAuditLogs(token) { requirePlan('deluxe', token); requireRole(token,['admin','admin_assistant']); return getAuditLogs(); }
 function adminEnrollStudent(token, sid, subId, sess, term) { 
   var s = requireRole(token,['admin','admin_assistant']); 
   var currentSettings = getSettings();
@@ -1112,5 +1114,9 @@ function setupSheets() {
   // Seed standard Nigerian classes
   seedNigerianClasses();
 
+  // Setup Automated Backup
+  setupBackupTrigger();
+
   return 'Setup complete! Admin login: admin@school.portal / admin123 (change this password immediately after first login!)';
 }
+
