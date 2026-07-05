@@ -327,7 +327,13 @@ function setFormData(formId, data) {
 function buildTable(tableId, columns, rows, actionFn) {
   var tbody = document.querySelector('#' + tableId + ' tbody');
   if (!tbody) return;
-  if (!rows || rows.length === 0) {
+  
+  if (rows && rows.success === false) {
+    tbody.innerHTML = '<tr><td colspan="' + (columns.length + (actionFn ? 1 : 0)) + '" class="text-center text-danger" style="padding:32px;">' + (rows.message ? AA.escapeHTML(rows.message) : 'Error loading data.') + '</td></tr>';
+    return;
+  }
+
+  if (!rows || !Array.isArray(rows) || rows.length === 0) {
     tbody.innerHTML = '<tr><td colspan="' + (columns.length + (actionFn ? 1 : 0)) + '" class="text-center text-muted" style="padding:32px;">No records found.</td></tr>';
     return;
   }
