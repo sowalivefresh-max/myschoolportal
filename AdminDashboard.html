@@ -60,6 +60,9 @@
         </button>
         
         <div class="aa-nav-section">System</div>
+        <button class="aa-nav-item" id="nav-audit" onclick="switchTab('admin-tabs', 'tab-audit'); setActiveNav('nav-audit')">
+          <i class="fa fa-history"></i> Audit Logs
+        </button>
         <button class="aa-nav-item" id="nav-settings" onclick="switchTab('admin-tabs', 'tab-settings'); setActiveNav('nav-settings')">
           <i class="fa fa-cogs"></i> Settings
         </button>
@@ -599,8 +602,8 @@
   </div>
 
     <!-- Bulk Student Modal -->
-  <div id="bulkStudentModal" class="aa-modal">
-    <div class="aa-modal-content" style="max-width:500px;">
+  <div id="bulkStudentModal" class="aa-modal-backdrop">
+    <div class="aa-modal" style="max-width:500px;">
       <div class="aa-modal-header">
         <h3 class="aa-modal-title">Bulk Upload Students</h3>
         <button class="aa-modal-close" onclick="closeModal('bulkStudentModal')">&times;</button>
