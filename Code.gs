@@ -547,7 +547,21 @@ function adminUpdateSettings(token, data) {
 function adminGetScores(token, filters) { requireRole(token,['admin','admin_assistant']); return getScores(filters); }
 function adminLockScores(token, filters) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('LOCK_SCORES', filters, s.userId); return lockScores(filters); }
 function adminUnlockScores(token, filters) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('UNLOCK_SCORES', filters, s.userId); return unlockScores(filters); }
-function adminGetAuditLogs(token) { requirePlan('deluxe', token); requireRole(token,['admin','admin_assistant']); return getAuditLogs(); }
+function adminGetAuditLogs(token) { 
+  requirePlan('deluxe', token); 
+  var s = requireRole(token,['admin','admin_assistant']); 
+  var logs = getAuditLogs();
+  if (s.role !== 'developer') {
+    var users = getAllUsers();
+    var devIds = users.filter(function(u){ return u.role === 'developer'; }).map(function(u){ return String(u.id); });
+    devIds.push('developer@school.portal');
+    logs = logs.filter(function(log) {
+      var logUserId = String(log[1] || log.userId);
+      return devIds.indexOf(logUserId) === -1;
+    });
+  }
+  return logs;
+}
 function adminEnrollStudent(token, sid, subId, sess, term) { 
   var s = requireRole(token,['admin','admin_assistant']); 
   var currentSettings = getSettings();
