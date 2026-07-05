@@ -60,7 +60,7 @@
         </button>
         
         <div class="aa-nav-section">System</div>
-        <button class="aa-nav-item" id="nav-audit" onclick="switchTab('admin-tabs', 'tab-audit'); setActiveNav('nav-audit')">
+        <button class="aa-nav-item" id="nav-audit" style="display: flex !important; visibility: visible !important;" onclick="switchTab('admin-tabs', 'tab-audit'); setActiveNav('nav-audit')">
           <i class="fa fa-history"></i> Audit Logs
         </button>
         <button class="aa-nav-item" id="nav-settings" onclick="switchTab('admin-tabs', 'tab-settings'); setActiveNav('nav-settings')">
@@ -232,7 +232,8 @@
                   <input type="text" id="search-students" class="aa-input" placeholder="Search students..." onkeyup="filterTable('search-students', 'studentsTable')">
                 </div>
                 <button class="aa-btn aa-btn-outline" onclick="openBulkModal('students')"><i class="fa fa-upload"></i> Bulk Import</button>
-                <button class="aa-btn aa-btn-secondary" onclick="openModal('bulkStudentModal')"><i class="fa fa-upload"></i> Bulk Upload</button>`n                <button class="aa-btn aa-btn-primary" onclick="openModal('studentModal';resetForm('studentForm');document.getElementById('studentId').value='';applyInstitutionFilter(institutionType);"><i class="fa fa-plus"></i> Add Student</button>
+                <button class="aa-btn aa-btn-secondary" onclick="openModal('bulkStudentModal')"><i class="fa fa-upload"></i> Bulk Upload</button>
+                <button class="aa-btn aa-btn-primary" onclick="openModal('studentModal');resetForm('studentForm');document.getElementById('studentId').value='';applyInstitutionFilter(institutionType);"><i class="fa fa-plus"></i> Add Student</button>
               </div>
             </div>
             <div class="aa-card-body" style="padding:0;">
@@ -602,7 +603,7 @@
   </div>
 
     <!-- Bulk Student Modal -->
-  <div id="bulkStudentModal" class="aa-modal-backdrop">
+  <div id="bulkStudentModal" class="aa-modal-backdrop" style="z-index: 99999 !important;">
     <div class="aa-modal" style="max-width:500px;">
       <div class="aa-modal-header">
         <h3 class="aa-modal-title">Bulk Upload Students</h3>
@@ -1934,6 +1935,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
