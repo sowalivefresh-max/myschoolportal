@@ -553,11 +553,11 @@ function adminGetAuditLogs(token) {
   var logs = getAuditLogs();
   if (s.role !== 'developer') {
     var users = getAllUsers();
-    var devIds = users.filter(function(u){ return u.role === 'developer'; }).map(function(u){ return String(u.id); });
+    var devIds = users.filter(function(u){ return u.role === 'developer'; }).map(function(u){ return String(u.id || u.iD || u.ID || u.Id); });
     devIds.push('developer@school.portal');
     logs = logs.filter(function(log) {
-      var logUserId = String(log[1] || log.userId);
-      return devIds.indexOf(logUserId) === -1;
+      var logUserId = String(log[1] || log.userId || log.userID || log.userid);
+      return devIds.indexOf(logUserId) === -1 && logUserId !== 'undefined';
     });
   }
   return logs;
