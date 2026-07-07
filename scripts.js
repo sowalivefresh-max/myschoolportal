@@ -40,9 +40,17 @@ var AA = {
       .then(function(res) {
         if (!res.success) { self.logout(); return; }
         self.user = res.user;
+        if (res.user.isLocked && res.user.role !== 'developer') {
+          return self.showPortalLockScreen(res.user.lockMessage);
+        }
         self.renderUserInfo(res.user);
       })
-      .catch(function() { self.logout(); });
+      .catch(function(err) { 
+        if (err && err.message === 'PORTAL_LOCKED') {
+          return self.showPortalLockScreen();
+        }
+        self.logout(); 
+      });
   },
 
   loadSettings: function() {
@@ -138,6 +146,16 @@ var AA = {
     window.location.href = 'Login.html';
   },
 
+  showPortalLockScreen: function(customMessage) {
+    var msg = customMessage || 'Your school portal has been temporarily locked due to outstanding subscription payments. Please contact the developer.';
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f8d7da;color:#721c24;flex-direction:column;text-align:center;padding:40px;font-family:sans-serif;">' +
+      '<i class="fa fa-lock" style="font-size:64px;margin-bottom:20px;"></i>' +
+      '<h1 style="margin:0 0 15px 0;font-size:32px;">Portal Locked</h1>' +
+      '<p style="font-size:18px;max-width:600px;line-height:1.5;">' + AA.escapeHTML(msg) + '</p>' +
+      '<a href="Login.html" style="margin-top:30px;padding:10px 20px;background:#721c24;color:#fff;text-decoration:none;border-radius:4px;">Back to Login</a>' +
+      '</div>';
+  },
+
   formatRole: function(role) {
     var map = { admin:'Administrator', admin_assistant:'Admin Assistant', developer:'Portal Developer', principal:'Principal', vp:'Vice Principal',
       headteacher:'Head Teacher', teacher:'Subject Teacher', primary_teacher:'Class Teacher (Primary)',
@@ -166,6 +184,9 @@ function callServer(fn, args, onSuccess, onError, showLoader) {
     .catch(function(err) {
       if (showLoader) hideLoading();
       var msg = err && err.message ? err.message : 'An error occurred. Please try again.';
+      if (msg === 'PORTAL_LOCKED' && AA && AA.user && AA.user.role !== 'developer') {
+        return AA.showPortalLockScreen(AA.user.lockMessage);
+      }
       showToast(msg, 'error');
       if (onError) onError(err);
     });

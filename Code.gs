@@ -355,10 +355,20 @@ function getCurrentUser(token) {
     return String(c.classTeacherId || c.classTeacherID) === String(u.id);
   });
 
+  var settings = getSettings();
+  var isLocked = settings.portal_locked === 'true';
+  if (!isLocked && settings.subscription_expiry) {
+    var expiryDate = new Date(settings.subscription_expiry);
+    if (!isNaN(expiryDate.getTime()) && new Date() > expiryDate) {
+      isLocked = true;
+    }
+  }
+
   return { success: true, user: { id: u.id, fullName: u.fullName, email: u.email,
     role: u.role, section: u.section, classAssigned: assignedClass,
     isClassTeacher: isClassTeacher,
-    profilePicture: u.profilePicture, phone: u.phone } };
+    profilePicture: u.profilePicture, phone: u.phone,
+    isLocked: isLocked, lockMessage: settings.lock_message } };
 }
 
 function userUpdateProfile(token, data) {
@@ -386,7 +396,8 @@ function getPublicBranding() {
     school_motto: cfg.school_motto || '',
     school_logo_url: logo,
     current_term: cfg.current_term || '',
-    current_session: cfg.current_session || ''
+    current_session: cfg.current_session || '',
+    subscription_expiry: cfg.subscription_expiry || ''
   };
 }
 
@@ -395,6 +406,21 @@ function getPublicBranding() {
 function requireRole(token, roles) {
   var s = validateSession(token);
   if (!s) throw new Error('Session expired. Please log in again.');
+
+  if (s.role !== 'developer') {
+    var settings = getSettings();
+    var isLocked = settings.portal_locked === 'true';
+    if (!isLocked && settings.subscription_expiry) {
+      var expiryDate = new Date(settings.subscription_expiry);
+      if (!isNaN(expiryDate.getTime()) && new Date() > expiryDate) {
+        isLocked = true;
+      }
+    }
+    if (isLocked) {
+      throw new Error('PORTAL_LOCKED');
+    }
+  }
+
   var allowed = Array.isArray(roles) ? roles : [roles];
   if (allowed.indexOf(s.role) === -1 && s.role !== 'admin' && s.role !== 'developer')
     throw new Error('Access denied. Insufficient permissions.');
