@@ -107,6 +107,7 @@ function getActionWhitelist() {
     'adminSaveGradeRule':         adminSaveGradeRule,
     'adminGetStudentSubjects':    adminGetStudentSubjects,
     'adminGetSchoolPerformance':  adminGetSchoolPerformance,
+    'adminGetComplianceSummary':  adminGetComplianceSummary,
     'adminComputePositions':      adminComputePositions,
     'adminGetPendingTasks':       adminGetPendingTasks,
     'adminApproveTask':           adminApproveTask,
@@ -668,6 +669,21 @@ function adminGetStudentSubjects(token, sid) {
 }
 
 function adminGetSchoolPerformance(token, term, sess) { requireRole(token,['admin','admin_assistant']); return getSchoolPerformanceOverview(term, sess); }
+function adminGetComplianceSummary(token, term, sess) {
+  requireRole(token,['admin','admin_assistant']);
+  
+  var teachers = getAllUsers().filter(function(u) { return u.role === 'teacher' || u.role === 'primary_teacher'; });
+  var plans = getSheetData('LessonPlans').filter(function(p) { return String(p.term) === String(term) && String(p.session) === String(sess); });
+  var scores = getSheetData('Assessments').filter(function(s) { return String(s.term) === String(term) && String(s.session) === String(sess); });
+  
+  var submittedPlans = plans.filter(function(p) { return ['submitted','approved'].indexOf(String(p.status||'').toLowerCase()) !== -1; }).length;
+  
+  return {
+    totalTeachers: teachers.length,
+    submittedPlans: submittedPlans,
+    resultsEntered: scores.length
+  };
+}
 function adminComputePositions(token, className, term, sess) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('COMPUTE_POSITIONS', {className:className, term:term, sess:sess}, s.userId); return computeClassPositions(className, term, sess); }
 
 // --- PENDING TASK ENDPOINTS (Maker-Checker - Deluxe Plan only) --------------
