@@ -486,12 +486,19 @@ function adminCreateUser(token, data) {
 function adminUpdateUser(token, uid, data) { 
   var s = requireRole(token,['admin','admin_assistant']); 
   if (data.role === 'developer' && s.role !== 'developer') throw new Error('Security Error: Only developers can grant developer privileges.');
+  if (s.role !== 'developer') _requireNotDeveloperTarget(uid);
   if (s.role === 'admin_assistant') return logPendingTask('UPDATE_USER', {uid: uid, data: data}, s.userId); 
   return updateUser(uid, data); 
 }
-function adminDeleteUser(token, uid) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('DELETE_USER', {uid: uid}, s.userId); return deleteUser(uid); }
+function adminDeleteUser(token, uid) { 
+  var s = requireRole(token,['admin','admin_assistant']); 
+  if (s.role !== 'developer') _requireNotDeveloperTarget(uid);
+  if (s.role === 'admin_assistant') return logPendingTask('DELETE_USER', {uid: uid}, s.userId); 
+  return deleteUser(uid); 
+}
 function adminResetUserPassword(token, uid) { 
   var s = requireRole(token,['admin','admin_assistant']); 
+  if (s.role !== 'developer') _requireNotDeveloperTarget(uid);
   if (s.role === 'admin_assistant') return logPendingTask('RESET_PWD', {uid: uid}, s.userId);
   return updateUser(uid, { password: 'password123' }); 
 }
@@ -825,23 +832,30 @@ function teacherGetScores(token, filters) {
   return getScores(filters);
 }
 function teacherSaveScore(token, data) {
-  requireRole(token, ['teacher','primary_teacher']);
+  var s = requireRole(token, ['teacher','primary_teacher']);
+  if (data && data.subjectId) _verifyTeacherSubjectAuth(s.userId, data.subjectId);
   return saveScore(data);
 }
 function teacherBulkSaveScores(token, data) {
-  requireRole(token, ['teacher','primary_teacher']);
+  var s = requireRole(token, ['teacher','primary_teacher']);
+  if (data && data.length > 0 && data[0].subjectId) {
+    _verifyTeacherSubjectAuth(s.userId, data[0].subjectId);
+  }
   return bulkSaveScores(data);
 }
 function teacherLockScores(token, filters) {
-  requireRole(token, ['teacher','primary_teacher']);
+  var s = requireRole(token, ['teacher','primary_teacher']);
+  if (filters && filters.subjectId) _verifyTeacherSubjectAuth(s.userId, filters.subjectId);
   return lockScores(filters);
 }
 function teacherSubmitScores(token, filters) {
-  requireRole(token, ['teacher','primary_teacher']);
+  var s = requireRole(token, ['teacher','primary_teacher']);
+  if (filters && filters.subjectId) _verifyTeacherSubjectAuth(s.userId, filters.subjectId);
   return lockScores(filters);
 }
 function teacherMarkAttendance(token, className, date, records, term, sess) {
   var s = requireRole(token, ['teacher','primary_teacher']);
+  if (className) _verifyTeacherClassAuth(s.userId, className);
   return markAttendance(className, date, records, s.userId, term, sess);
 }
 function teacherGetAttendance(token, className, term, sess) {
@@ -857,11 +871,13 @@ function teacherGetStudentAttendanceSummary(token, studentId, term, sess) {
   return getStudentAttendanceSummary(studentId, term, sess);
 }
 function teacherSavePsychomotor(token, data) {
-  requireRole(token, ['teacher','primary_teacher']);
+  var s = requireRole(token, ['teacher','primary_teacher']);
+  if (data && data.className) _verifyTeacherClassAuth(s.userId, data.className);
   return savePsychomotorRecord(data);
 }
 function teacherSaveAffective(token, data) {
-  requireRole(token, ['teacher','primary_teacher']);
+  var s = requireRole(token, ['teacher','primary_teacher']);
+  if (data && data.className) _verifyTeacherClassAuth(s.userId, data.className);
   return saveAffectiveRecord(data);
 }
 function teacherGetPsychomotor(token, sid, term, sess) {
@@ -1035,8 +1051,13 @@ function parentGetStudentCredit(token, sid) {
   return getStudentCreditBalance(sid);
 }
 function parentDownloadReceipt(token, payId) {
-  requireRole(token,'parent');
+  var s = requireRole(token,'parent');
   try {
+    var payments = getSheetData('Payments');
+    var payment = payments.find(function(p) { return String(p.iD || p.id) === String(payId); });
+    if (!payment) return { success: false, message: 'Payment not found.' };
+    _verifyParentChild(s.userId, payment.studentID || payment.studentId);
+    
     return generateReceiptPDF(payId);
   } catch(e) {
     Logger.log('parentDownloadReceipt error: ' + e);
@@ -1055,6 +1076,40 @@ function _verifyParentChild(parentUserId, studentId) {
   var linked = user.linkedStudentIds ? String(user.linkedStudentIds).split(',').map(function(x){return x.trim();}) : [];
   if (linked.indexOf(String(studentId)) === -1)
     throw new Error('Access denied. Student not linked to this account.');
+}
+
+function _requireNotDeveloperTarget(targetUid) {
+  var user = getUserById(targetUid);
+  if (user && user.role === 'developer') {
+    throw new Error('Security Error: Developer accounts cannot be modified or deleted by other users.');
+  }
+}
+
+function _verifyTeacherClassAuth(teacherId, className) {
+  if (!className) throw new Error('Class name is required.');
+  var classes = getSheetData('Classes');
+  var cls = classes.find(function(c) { return String(c.className || c.ClassName) === String(className); });
+  if (!cls) throw new Error('Class not found.');
+  if (String(cls.classTeacherId || cls.classTeacherID) !== String(teacherId)) {
+    throw new Error('Access denied. You are not the class teacher for this class.');
+  }
+}
+
+function _verifyTeacherSubjectAuth(teacherId, subjectId) {
+  var subject = getSubjectById(subjectId);
+  if (!subject) throw new Error('Subject not found.');
+  if (String(subject.assignedTeacherId || subject.assignedTeacherID) === String(teacherId)) {
+    return true;
+  }
+  if (subject.className || subject.class) {
+    var className = subject.className || subject.class;
+    var classes = getSheetData('Classes');
+    var cls = classes.find(function(c) { return String(c.className || c.ClassName) === String(className); });
+    if (cls && String(cls.classTeacherId || cls.classTeacherID) === String(teacherId)) {
+      return true;
+    }
+  }
+  throw new Error('Access denied. You are not assigned to this subject or class.');
 }
 
 // ─── DATABASE SETUP ──────────────────────────────────────────
