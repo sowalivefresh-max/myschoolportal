@@ -1,9 +1,9 @@
 /**
- * ABECEDARIAN ACADEMY — PDFGenerator.gs
+ * ABECEDARIAN ACADEMY - PDFGenerator.gs
  * HTML→PDF generation via Apps Script for report cards, receipts, lesson plans.
  */
 
-// ─── RESULT / REPORT CARD PDF ────────────────────────────────
+// --- RESULT / REPORT CARD PDF --------------------------------
 
 function generateResultPDF(studentId, term, session, reportType) {
   var report = generateStudentReport(studentId, term, session, reportType);
@@ -25,7 +25,7 @@ function generateResultPDF(studentId, term, session, reportType) {
     .getAs(MimeType.PDF)
     .setName(studentName + '_' + prefix + term.replace(/\s+/g, '_') + '_Report.pdf');
 
-  var folder = getOrCreateFolder((cfg.schoolName || 'My School') + ' — Reports');
+  var folder = getOrCreateFolder((cfg.schoolName || 'My School') + ' - Reports');
   var file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
@@ -96,7 +96,7 @@ function generateStudentReportHTML(report, cfg, logoB64) {
   html += '<div class="school-name">' + cfg.schoolName + '</div>';
   if (cfg.schoolMotto) html += '<div class="school-motto">"' + cfg.schoolMotto + '"</div>';
   html += '<div style="font-size:11px;color:#555;margin:2px 0;">Academic Report Card</div>';
-  html += '<div class="rpt-title">' + term + ' Report — ' + session + '</div>';
+  html += '<div class="rpt-title">' + term + ' Report - ' + session + '</div>';
   html += '</div>';
   
   var studentPhotoB64 = s.photoUrl ? imageToBase64(s.photoUrl) : '';
@@ -207,25 +207,25 @@ function generateStudentReportHTML(report, cfg, logoB64) {
     html += '</table>';
   }
 
-  // Comments & Signatures — section-aware
+  // Comments & Signatures - section-aware
   var studentSection = (s.section || '').toLowerCase();
   if (studentSection === 'highschool') studentSection = 'high';
   var isPrimary = (studentSection === 'primary');
 
   html += '<div class="sec-title">Remarks</div>';
 
-  // ── Class Teacher's comment + signature ──
+  // -- Class Teacher's comment + signature --
   html += '<div class="comment-box"><strong>Class Teacher\'s Remark:</strong> ' + comments.classTeacher + '</div>';
   var ctSig = cfg.class_teacher_signature ? '<img src="' + cfg.class_teacher_signature + '" style="max-height:40px; margin-bottom: 2px;">' : '<div style="height:20px;"></div>';
   html += '<div style="text-align:right;margin:4px 0 14px;"><div style="display:inline-block;text-align:center;min-width:180px;">' + ctSig + '<div class="sig-line" style="margin-top:0;">Class Teacher</div></div></div>';
 
   if (isPrimary) {
-    // ── Head Teacher's comment + signature (Primary only) ──
+    // -- Head Teacher's comment + signature (Primary only) --
     html += '<div class="comment-box"><strong>Head Teacher\'s Remark:</strong> ' + comments.headTeacher + '</div>';
     var htSig = cfg.head_teacher_signature ? '<img src="' + cfg.head_teacher_signature + '" style="max-height:40px; margin-bottom: 2px;">' : '<div style="height:20px;"></div>';
     html += '<div style="text-align:right;margin:4px 0 14px;"><div style="display:inline-block;text-align:center;min-width:180px;">' + htSig + '<div class="sig-line" style="margin-top:0;">' + cfg.headTeacherName + '<br><span style="font-size:9px;color:#555;">Head Teacher</span></div></div></div>';
   } else {
-    // ── Principal's comment + signature (High School only) ──
+    // -- Principal's comment + signature (High School only) --
     html += '<div class="comment-box"><strong>Principal\'s Remark:</strong> ' + comments.principal + '</div>';
     var pSig = cfg.principal_signature ? '<img src="' + cfg.principal_signature + '" style="max-height:40px; margin-bottom: 2px;">' : '<div style="height:20px;"></div>';
     html += '<div style="text-align:right;margin:4px 0 14px;"><div style="display:inline-block;text-align:center;min-width:180px;">' + pSig + '<div class="sig-line" style="margin-top:0;">' + cfg.principalName + '<br><span style="font-size:9px;color:#555;">Principal</span></div></div></div>';
@@ -283,7 +283,7 @@ function generateBulkClassResultPDF(className, term, session, reportType) {
     .getAs(MimeType.PDF)
     .setName(className.replace(/\s+/g, '_') + '_' + prefix + term.replace(/\s+/g, '_') + '_Bulk_Result.pdf');
 
-  var folder = getOrCreateFolder((cfg.schoolName || 'My School') + ' — Reports');
+  var folder = getOrCreateFolder((cfg.schoolName || 'My School') + ' - Reports');
   var file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
@@ -296,7 +296,7 @@ function generateBulkClassResultPDF(className, term, session, reportType) {
   };
 }
 
-// ─── PAYMENT RECEIPT PDF ─────────────────────────────────────
+// --- PAYMENT RECEIPT PDF -------------------------------------
 
 function generateReceiptPDF(paymentId) {
   var payments = getSheetData('Payments');
@@ -331,7 +331,7 @@ function generateReceiptPDF(paymentId) {
 
   var blob = Utilities.newBlob(html, MimeType.HTML).getAs(MimeType.PDF)
     .setName('Receipt_' + (payment.receiptRef || paymentId) + '.pdf');
-  var folder = getOrCreateFolder(schoolName + ' — Receipts');
+  var folder = getOrCreateFolder(schoolName + ' - Receipts');
   var file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
@@ -343,7 +343,7 @@ function generateReceiptPDF(paymentId) {
   };
 }
 
-// ─── LESSON PLAN PDF ─────────────────────────────────────────
+// --- LESSON PLAN PDF -----------------------------------------
 
 function generateLessonPlanPDF(planId) {
   var plans = getSheetData('LessonPlans');
@@ -390,7 +390,7 @@ function generateLessonPlanPDF(planId) {
 
   var blob = Utilities.newBlob(html, MimeType.HTML).getAs(MimeType.PDF)
     .setName('LessonPlan_' + planId + '.pdf');
-  var folder = getOrCreateFolder(schoolName + ' — Lesson Plans');
+  var folder = getOrCreateFolder(schoolName + ' - Lesson Plans');
   var file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return { success: true, pdfUrl: file.getUrl(), downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId() };

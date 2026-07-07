@@ -1,7 +1,7 @@
 /**
  * ============================================================
- *  ABECEDARIAN ACADEMY — SCHOOL MANAGEMENT PORTAL
- *  Auth.gs  —  Authentication & Session Management
+ *  ABECEDARIAN ACADEMY - SCHOOL MANAGEMENT PORTAL
+ *  Auth.gs  -  Authentication & Session Management
  * ============================================================
  *  - SHA-256 password hashing
  *  - Token-based sessions via ScriptProperties
@@ -10,7 +10,7 @@
  * ============================================================
  */
 
-// ─── Authentication ──────────────────────────────────────────
+// --- Authentication ------------------------------------------
 
 /**
  * Authenticate a user with email and password.
@@ -66,7 +66,7 @@ function authenticate(email, password) {
   return { success: false, message: 'Invalid email or password. Please try again.' };
 }
 
-// ─── Session Management ──────────────────────────────────────
+// --- Session Management --------------------------------------
 
 /**
  * Create a new session token and store it in ScriptProperties.
@@ -155,7 +155,7 @@ function cleanExpiredSessions() {
   return cleaned;
 }
 
-// ─── Password Hashing ────────────────────────────────────────
+// --- Password Hashing ----------------------------------------
 
 /**
  * Generate a random 16-character hex salt for password hashing.

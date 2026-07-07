@@ -194,7 +194,7 @@
       function initDashboard() {
         if (!AA.user || !AA.settings || !AA.settings.current_term) return setTimeout(initDashboard, 100);
         currentTerm = AA.settings.current_term; currentSession = AA.settings.current_session;
-        document.getElementById('currentTermText').textContent = currentTerm + ' — ' + currentSession;
+        document.getElementById('currentTermText').textContent = currentTerm + ' - ' + currentSession;
         loadDashboard();
       }
       initDashboard();
@@ -271,7 +271,7 @@
         callServer('adminGenerateBulkResult', [AA.token, cls, currentTerm, currentSession, rptType], function(res) {
           if(res.success) {
             showToast('Bulk results ready!', 'success');
-            openPDFViewer(res.previewUrl, res.downloadUrl, cls + ' — Bulk Results');
+            openPDFViewer(res.previewUrl, res.downloadUrl, cls + ' - Bulk Results');
           } else {
             showToast(res.message || 'Failed to generate results.', 'error');
           }

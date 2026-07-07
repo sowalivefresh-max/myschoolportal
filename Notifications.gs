@@ -1,5 +1,5 @@
 /**
- * ABECEDARIAN ACADEMY — Notifications.gs
+ * ABECEDARIAN ACADEMY - Notifications.gs
  * Gmail-based automated email notifications.
  */
 
@@ -27,7 +27,7 @@ function sendPaymentReceipt(paymentId) {
     var settings = getSettings();
     var schoolName = settings.school_name || 'My School';
 
-    var subject = schoolName + ' — Payment Receipt (' + payment.receiptRef + ')';
+    var subject = schoolName + ' - Payment Receipt (' + payment.receiptRef + ')';
     var body = buildPaymentReceiptEmail(schoolName, student, payment, balance);
 
     GmailApp.sendEmail(parent.email, subject, '', { htmlBody: body, name: schoolName });
@@ -65,7 +65,7 @@ function sendPaymentRejection(paymentId) {
 
     var settings = getSettings();
     var schoolName = settings.school_name || 'My School';
-    var subject = schoolName + ' — Payment Submission Rejected';
+    var subject = schoolName + ' - Payment Submission Rejected';
 
     var body = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">' +
       '<div style="background:#dc2626;color:white;padding:20px;text-align:center;">' +
@@ -76,7 +76,7 @@ function sendPaymentRejection(paymentId) {
       '<p>We regret to inform you that your recent payment submission has been <strong style="color:#dc2626;">REJECTED</strong> during validation.</p>' +
       '<table style="width:100%;border-collapse:collapse;margin:15px 0;">' +
       '<tr style="background:#f5f5f5;"><td style="padding:8px;border:1px solid #ddd;"><strong>Student</strong></td><td style="padding:8px;border:1px solid #ddd;">' + student.fullName + '</td></tr>' +
-      '<tr><td style="padding:8px;border:1px solid #ddd;"><strong>Term / Session</strong></td><td style="padding:8px;border:1px solid #ddd;">' + payment.term + ' — ' + payment.session + '</td></tr>' +
+      '<tr><td style="padding:8px;border:1px solid #ddd;"><strong>Term / Session</strong></td><td style="padding:8px;border:1px solid #ddd;">' + payment.term + ' - ' + payment.session + '</td></tr>' +
       '<tr style="background:#f5f5f5;"><td style="padding:8px;border:1px solid #ddd;"><strong>Amount Submitted</strong></td><td style="padding:8px;border:1px solid #ddd;">' + formatNaira(payment.amount) + '</td></tr>' +
       '<tr><td style="padding:8px;border:1px solid #ddd;"><strong>Reference</strong></td><td style="padding:8px;border:1px solid #ddd;">' + (payment.receiptRef || 'N/A') + '</td></tr>' +
       '</table>' +
@@ -112,7 +112,7 @@ function buildPaymentReceiptEmail(schoolName, student, payment, balance) {
     '<tr style="background:#f5f5f5;"><td style="padding:8px;border:1px solid #ddd;"><strong>Receipt Ref</strong></td><td style="padding:8px;border:1px solid #ddd;">' + (payment.receiptRef || '') + '</td></tr>' +
     '<tr><td style="padding:8px;border:1px solid #ddd;"><strong>Student</strong></td><td style="padding:8px;border:1px solid #ddd;">' + student.fullName + '</td></tr>' +
     '<tr style="background:#f5f5f5;"><td style="padding:8px;border:1px solid #ddd;"><strong>Class</strong></td><td style="padding:8px;border:1px solid #ddd;">' + (student.class || student.className || '') + '</td></tr>' +
-    '<tr><td style="padding:8px;border:1px solid #ddd;"><strong>Term / Session</strong></td><td style="padding:8px;border:1px solid #ddd;">' + payment.term + ' — ' + payment.session + '</td></tr>' +
+    '<tr><td style="padding:8px;border:1px solid #ddd;"><strong>Term / Session</strong></td><td style="padding:8px;border:1px solid #ddd;">' + payment.term + ' - ' + payment.session + '</td></tr>' +
     '<tr style="background:#f5f5f5;"><td style="padding:8px;border:1px solid #ddd;"><strong>Amount Paid</strong></td><td style="padding:8px;border:1px solid #ddd;color:#16a34a;font-weight:bold;">' + formatNaira(payment.amount) + '</td></tr>' +
     '<tr><td style="padding:8px;border:1px solid #ddd;"><strong>Payment Method</strong></td><td style="padding:8px;border:1px solid #ddd;">' + (payment.method || 'Cash') + '</td></tr>' +
     '<tr style="background:#f5f5f5;"><td style="padding:8px;border:1px solid #ddd;"><strong>Payment Date</strong></td><td style="padding:8px;border:1px solid #ddd;">' + formatDate(payment.paymentDate || payment.date) + '</td></tr>' +
@@ -138,7 +138,7 @@ function sendAbsenceAlert(studentId, date, consecutiveDays) {
 
     var settings = getSettings();
     var schoolName = settings.school_name || 'My School';
-    var subject = schoolName + ' — Absence Notification for ' + student.fullName;
+    var subject = schoolName + ' - Absence Notification for ' + student.fullName;
     var body = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">' +
       '<div style="background:#dc2626;color:white;padding:20px;text-align:center;">' +
       '<h2 style="margin:0;">' + schoolName + '</h2>' +
@@ -170,7 +170,7 @@ function sendReportReadyNotification(studentId, term, session, pdfUrl) {
     if (!parent || !parent.email) return;
     var settings = getSettings();
     var schoolName = settings.school_name || 'My School';
-    var subject = schoolName + ' — ' + term + ' Report Card Ready';
+    var subject = schoolName + ' - ' + term + ' Report Card Ready';
     var body = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">' +
       '<div style="background:#0d1b2a;color:#f0a500;padding:20px;text-align:center;">' +
       '<h2 style="margin:0;">' + schoolName + '</h2>' +
@@ -232,7 +232,7 @@ function sendOutstandingBalanceReminders(term, session, section, batchSize) {
       var parent = getUserById(parentId);
       if (!parent || !parent.email) return;
 
-      var subject = schoolName + ' — Outstanding Balance Reminder';
+      var subject = schoolName + ' - Outstanding Balance Reminder';
       var body = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">' +
         '<div style="background:#0d1b2a;color:#f0a500;padding:15px;text-align:center;"><h3>' + schoolName + '</h3></div>' +
         '<div style="padding:20px;">' +

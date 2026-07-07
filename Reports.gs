@@ -1,5 +1,5 @@
 /**
- * ABECEDARIAN ACADEMY — Reports.gs
+ * ABECEDARIAN ACADEMY - Reports.gs
  * Academic report computation: positions, grades, auto-comments.
  */
 

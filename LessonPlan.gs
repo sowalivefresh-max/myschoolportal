@@ -1,5 +1,5 @@
 /**
- * ABECEDARIAN ACADEMY — LessonPlan.gs
+ * ABECEDARIAN ACADEMY - LessonPlan.gs
  * Lesson plan creation, submission, and approval workflow.
  */
 

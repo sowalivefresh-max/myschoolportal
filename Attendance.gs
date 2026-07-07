@@ -1,5 +1,5 @@
 /**
- * ABECEDARIAN ACADEMY — Attendance.gs
+ * ABECEDARIAN ACADEMY - Attendance.gs
  * Daily attendance tracking, statistics, and alerts.
  */
 

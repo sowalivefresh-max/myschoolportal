@@ -1,0 +1,67 @@
+# School Portal: Subscription Pricing Proposal (NGN)
+
+Based on the feature structure implemented in the Abecedarian Portal, the application is divided into three distinct subscription tiers. Below is a strategic breakdown of what each tier offers, target demographics, and recommended pricing models tailored for the Nigerian educational software market.
+
+## Feature Breakdown by Plan
+
+### 1. Basic Plan (The Foundation)
+**Target:** Small or budget-conscious schools needing to digitize core records.
+**Features Included:**
+*   **Student Management:** Enrollments, updates, and class assignments.
+*   **Staff Management:** Basic user accounts (Teachers, Head Teachers, Principals).
+*   **Academics & Grading:** Subject assignment, score entry (CA & Exam), and Nigerian Grading System (A1-F9).
+*   **Result Generation:** Standard report card generation (PDFs).
+*   **Basic Dashboards:** General overviews for all user roles.
+
+### 2. Standard Plan (The Academic Suite)
+**Target:** Growing schools that want strict control over curriculum delivery and teacher accountability.
+**Features Included:**
+*   *Everything in the Basic Plan.*
+*   **Lesson Plan Module:** Teachers can create, submit, and generate PDFs of lesson plans.
+*   **Lesson Plan Approval:** Admins and Principals can review, approve, or reject lesson plans with feedback notes.
+
+### 3. Deluxe Plan (The Enterprise Suite)
+**Target:** Established, medium-to-large schools requiring strict financial oversight, workflow approvals, and auditing.
+**Features Included:**
+*   *Everything in the Standard Plan.*
+*   **Advanced Finance Module:** Fee structures, bulk bill generation, expense tracking, income/expense reports, debtor management, and automated balance reminders.
+*   **Payment Processing:** Recording payments, issuing credit notes, reversing payments, and generating receipt PDFs.
+*   **Maker-Checker Workflow (Pending Tasks):** Requires Admin approval for critical actions (e.g., student deletions, major grading changes, or financial adjustments performed by Admin Assistants).
+*   **System Audit Logs:** Detailed tracking of "who did what and when" across the entire portal.
+
+---
+
+## Recommended Pricing Models
+
+In Nigeria, School Management Systems typically charge using one of two models: **Per-Student (Termly)** or a **Flat Termly/Annual Fee**. 
+
+> [!TIP]
+> **Recommendation:** The **Flat Fee model with student tiers** (e.g., up to 300 students, up to 500, etc.) is often preferred by Nigerian school owners as it provides predictable costs, while the Per-Student model is better for maximizing your revenue from very large schools.
+
+### Option A: Flat Termly Fee (Recommended for Small-Medium Schools)
+*Assuming a standard school size of 100 - 300 students.*
+
+| Plan | Suggested Price (Per Term) | Suggested Price (Per Year / 3 Terms) |
+| :--- | :--- | :--- |
+| **Basic Plan** | ₦30,000 - ₦50,000 | ₦80,000 - ₦135,000 *(10% discount)* |
+| **Standard Plan** | ₦60,000 - ₦85,000 | ₦160,000 - ₦230,000 *(10% discount)*|
+| **Deluxe Plan** | ₦100,000 - ₦150,000 | ₦270,000 - ₦400,000 *(10% discount)* |
+
+*Note: For schools with over 500 students, you can charge a 50% premium on the flat fee.*
+
+### Option B: Per-Student Fee (Recommended for Large Schools)
+*Billed at the beginning of each term based on active student enrollment.*
+
+| Plan | Suggested Price (Per Student / Term) | Minimum Charge (Per Term) |
+| :--- | :--- | :--- |
+| **Basic Plan** | ₦300 - ₦500 | ₦25,000 |
+| **Standard Plan** | ₦700 - ₦1,000 | ₦50,000 |
+| **Deluxe Plan** | ₦1,500 - ₦2,000 | ₦100,000 |
+
+---
+
+## Strategy & Upselling
+
+1. **The "Basic" Hook:** Keep the Basic plan affordable. Once a school inputs all their students and staff into your system, they are highly unlikely to leave.
+2. **The "Standard" Push:** Sell the Standard plan by highlighting *Teacher Accountability*. School owners love ensuring teachers are doing their jobs; the Lesson Plan approval workflow is a major selling point.
+3. **The "Deluxe" Necessity:** Once a school trusts your software with academics, they will naturally want to track school fees. At that point, the jump to the Deluxe plan becomes a no-brainer because it stops financial leakages and tracks every naira.

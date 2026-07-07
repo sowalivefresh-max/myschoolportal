@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>School Portal â€” Login</title>
+<title>School Portal - Login</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -168,7 +168,7 @@ runBackendAction('getPublicBranding', [])
   .then(function(b) {
     if (b.school_name) {
       document.getElementById('schoolName').textContent = b.school_name;
-      document.title = b.school_name + ' â€” School Portal';
+      document.title = b.school_name + ' - School Portal';
       var footerEl = document.getElementById('footerSchoolName');
       if (footerEl) footerEl.textContent = b.school_name;
       var initials = b.school_name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().substring(0,2);

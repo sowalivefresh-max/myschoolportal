@@ -1,9 +1,9 @@
 /**
- * ABECEDARIAN ACADEMY — Database.gs
+ * ABECEDARIAN ACADEMY - Database.gs
  * Core CRUD operations for all entities.
  */
 
-// ─── USERS ──────────────────────────────────────────────────
+// --- USERS --------------------------------------------------
 
 function getAllUsers() {
   var users = getSheetData('Users', true);
@@ -27,7 +27,7 @@ function getUserById(userId) {
 }
 
 function createUser(data) {
-  // ── Input validation ────────────────────────────────────────
+  // -- Input validation ----------------------------------------
   var v = validateInput(data, [
     { field: 'fullName', required: true,  maxLength: 100 },
     { field: 'email',    required: true,  type: 'email' },
@@ -37,7 +37,7 @@ function createUser(data) {
     { field: 'section',  required: false, maxLength: 20  }
   ]);
   if (!v.valid) return { success: false, message: v.message };
-  // ────────────────────────────────────────────────────────────
+  // ------------------------------------------------------------
   if (!isValidEmail(data.email))
     return { success: false, message: 'Invalid email.' };
   var existing = getSheetData('Users');
@@ -61,7 +61,7 @@ function createUser(data) {
 }
 
 function updateUser(userId, data) {
-  // ── Input validation (only fields that are being updated) ───
+  // -- Input validation (only fields that are being updated) ---
   var v = validateInput(data, [
     { field: 'fullName', required: false, maxLength: 100 },
     { field: 'email',    required: false, type: 'email' },
@@ -69,7 +69,7 @@ function updateUser(userId, data) {
     { field: 'phone',    required: false, maxLength: 20  }
   ]);
   if (!v.valid) return { success: false, message: v.message };
-  // ────────────────────────────────────────────────────────────
+  // ------------------------------------------------------------
   var sheet = getSpreadsheet().getSheetByName('Users');
   var row = findRowById(sheet, userId);
   if (row === -1) return { success: false, message: 'User not found.' };
@@ -105,7 +105,7 @@ function deleteUser(userId) {
   return { success: true, message: 'User deleted.' };
 }
 
-// ─── STUDENTS ───────────────────────────────────────────────
+// --- STUDENTS -----------------------------------------------
 
 function getAllStudents() {
   var students = getSheetData('Students').map(function(s) {
@@ -142,7 +142,7 @@ function getStudentById(studentId) {
 }
 
 function createStudent(data) {
-  // ── Input validation ────────────────────────────────────────
+  // -- Input validation ----------------------------------------
   var v = validateInput(data, [
     { field: 'fullName',        required: true,  maxLength: 100 },
     { field: 'className',       required: true,  maxLength: 50  },
@@ -152,7 +152,7 @@ function createStudent(data) {
     { field: 'school',          required: false, maxLength: 100 }
   ]);
   if (!v.valid) return { success: false, message: v.message };
-  // ────────────────────────────────────────────────────────────
+  // ------------------------------------------------------------
   var sheet = getSpreadsheet().getSheetByName('Students');
   var id = generateId();
   sheet.appendRow([
@@ -197,7 +197,7 @@ function bulkCreateStudents(students) {
   return { success: true, message: count + ' students successfully uploaded.' };
 }
 function updateStudent(studentId, data) {
-  // ── Input validation (only fields that are being updated) ───
+  // -- Input validation (only fields that are being updated) ---
   var v = validateInput(data, [
     { field: 'fullName',        required: false, maxLength: 100 },
     { field: 'className',       required: false, maxLength: 50  },
@@ -206,7 +206,7 @@ function updateStudent(studentId, data) {
     { field: 'school',          required: false, maxLength: 100 }
   ]);
   if (!v.valid) return { success: false, message: v.message };
-  // ────────────────────────────────────────────────────────────
+  // ------------------------------------------------------------
   var sheet = getSpreadsheet().getSheetByName('Students');
   var row = findRowById(sheet, studentId);
   if (row === -1) return { success: false, message: 'Student not found.' };
@@ -252,7 +252,7 @@ function getStudentsByClass(className) {
   });
 }
 
-// ─── CLASSES ────────────────────────────────────────────────
+// --- CLASSES ------------------------------------------------
 
 function getAllClasses() { 
   var classes = getSheetData('Classes', true); 
@@ -293,7 +293,7 @@ function deleteClass(classId) {
   return { success: true, message: 'Class deleted.' };
 }
 
-// ─── SUBJECTS ───────────────────────────────────────────────
+// --- SUBJECTS -----------------------------------------------
 
 function getAllSubjects() { 
   var subjects = getSheetData('Subjects', true); 
@@ -363,7 +363,7 @@ function assignSubjectsToTeacher(teacherUserId, subjectIds) {
   return { success: true, message: subjectIds.length + ' subject(s) assigned.' };
 }
 
-// ─── ENROLLMENTS ─────────────────────────────────────────────
+// --- ENROLLMENTS ---------------------------------------------
 
 function getEnrollments(filters) {
   var sheet = getSpreadsheet().getSheetByName('Enrollments');
@@ -449,7 +449,7 @@ function getStudentSubjects(studentId, session) {
   }).filter(Boolean);
 }
 
-// ─── ASSESSMENTS (SCORES) ────────────────────────────────────
+// --- ASSESSMENTS (SCORES) ------------------------------------
 
 function getScores(filters) {
   var scores = getSheetData('Assessments');
@@ -550,7 +550,7 @@ function unlockScores(filters) {
   return { success: true, message: count + ' score(s) unlocked.' };
 }
 
-// ─── PSYCHOMOTOR & AFFECTIVE ──────────────────────────────────
+// --- PSYCHOMOTOR & AFFECTIVE ----------------------------------
 
 function savePsychomotorRecord(data) {
   var sheet = getSpreadsheet().getSheetByName('PsychomotorRecords');
@@ -610,7 +610,7 @@ function getAffectiveRecord(studentId, term, session) {
   }) || null;
 }
 
-// ─── SETTINGS ────────────────────────────────────────────────
+// --- SETTINGS ------------------------------------------------
 
 function getSettings() {
   var cache = CacheService.getScriptCache();
@@ -684,7 +684,7 @@ function _syncParentChildLink(studentId, parentUserId, isRemoval) {
   }
 }
 
-// ─── PARENT HELPERS ──────────────────────────────────────────
+// --- PARENT HELPERS ------------------------------------------
 
 function getParentChildren(parentUserId) {
   var user = getUserById(parentUserId);
@@ -706,7 +706,7 @@ function getStudentResult(studentId, term, session) {
   };
 }
 
-// ─── ADMIN STATS ──────────────────────────────────────────────
+// --- ADMIN STATS ----------------------------------------------
 
 function getAdminStats(section) {
   var users = getSheetData('Users');
@@ -737,7 +737,7 @@ function getAdminStats(section) {
   };
 }
 
-// ─── ADMIN APPROVAL QUEUE ─────────────────────────────────────
+// --- ADMIN APPROVAL QUEUE -------------------------------------
 
 function logPendingTask(taskType, payload, requestedBy) {
   var ss = getSpreadsheet();
@@ -919,7 +919,7 @@ function seedNigerianClasses() {
   return { success: true, message: addedCount + ' standard classes added successfully.' };
 }
 
-// ─── BULK OPERATIONS ──────────────────────────────────────────
+// --- BULK OPERATIONS ------------------------------------------
 
 function bulkCreateStudents(students) {
   var sheet = getSpreadsheet().getSheetByName('Students');

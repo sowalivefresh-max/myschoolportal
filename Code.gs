@@ -1,18 +1,18 @@
 /**
  * ============================================================
- *  ABECEDARIAN ACADEMY — SCHOOL MANAGEMENT PORTAL
- *  Code.gs  —  Main Entry Point, Router & All Endpoints
+ *  ABECEDARIAN ACADEMY - SCHOOL MANAGEMENT PORTAL
+ *  Code.gs  -  Main Entry Point, Router & All Endpoints
  * ============================================================
  */
 
-const SPREADSHEET_ID = ''; // ← Paste your Google Sheet ID here
+const SPREADSHEET_ID = ''; // - Paste your Google Sheet ID here
 
 function getSpreadsheet() {
   if (!SPREADSHEET_ID) return SpreadsheetApp.getActiveSpreadsheet();
   return SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 
-// ─── WEB APP ENTRY POINT ─────────────────────────────────────
+// --- WEB APP ENTRY POINT -------------------------------------
 
 function doGet(e) {
   try {
@@ -36,7 +36,7 @@ function doGet(e) {
  */
 function getActionWhitelist() {
   return {
-    // ── Auth ──────────────────────────────────────────────────
+    // -- Auth --------------------------------------------------
     'loginUser':                  loginUser,
     'logoutUser':                 logoutUser,
     'getCurrentUser':             getCurrentUser,
@@ -45,7 +45,7 @@ function getActionWhitelist() {
     'getPublicBranding':          getPublicBranding,
     'requestPasswordReset':       requestPasswordReset,
 
-    // ── Admin ─────────────────────────────────────────────────
+    // -- Admin -------------------------------------------------
     'adminGetStats':              adminGetStats,
     'adminGetUsers':              adminGetUsers,
     'adminCreateUser':            adminCreateUser,
@@ -112,7 +112,7 @@ function getActionWhitelist() {
     'adminApproveTask':           adminApproveTask,
     'adminRejectTask':            adminRejectTask,
 
-    // ── Principal / VP / Headteacher ──────────────────────────
+    // -- Principal / VP / Headteacher --------------------------
     'principalGetStats':          principalGetStats,
     'principalGetStudentReport':  principalGetStudentReport,
     'principalGetStudentResultPDF': principalGetStudentResultPDF,
@@ -127,7 +127,7 @@ function getActionWhitelist() {
     'principalGetAllStudents':    principalGetAllStudents,
     'principalGetClasses':        principalGetClasses,
 
-    // ── Teacher ───────────────────────────────────────────────
+    // -- Teacher -----------------------------------------------
     'teacherGetMySubjects':       teacherGetMySubjects,
     'teacherGetSubjectStudents':  teacherGetSubjectStudents,
     'teacherGetClassStudents':    teacherGetClassStudents,
@@ -155,7 +155,7 @@ function getActionWhitelist() {
     'teacherGetStudentReport':    teacherGetStudentReport,
     'teacherComputePositions':    teacherComputePositions,
 
-    // ── Accounts ──────────────────────────────────────────────
+    // -- Accounts ----------------------------------------------
     'accountsGetFeeStructures':   accountsGetFeeStructures,
     'accountsSaveFeeStructure':   accountsSaveFeeStructure,
     'accountsDeleteFeeStructure': accountsDeleteFeeStructure,
@@ -178,7 +178,7 @@ function getActionWhitelist() {
     'accountsSendReminders':      accountsSendReminders,
     'accountsGetStudents':        accountsGetStudents,
 
-    // ── Parent ────────────────────────────────────────────────
+    // -- Parent ------------------------------------------------
     'parentGetChildren':          parentGetChildren,
     'parentGetReport':            parentGetReport,
     'parentDownloadReport':       parentDownloadReport,
@@ -219,7 +219,7 @@ function doPost(e) {
 function serveLogin() {
   var t = HtmlService.createTemplateFromFile('Login');
   var schoolName = getSettings().school_name || 'School Portal';
-  return t.evaluate().setTitle(schoolName + ' — Portal')
+  return t.evaluate().setTitle(schoolName + ' - Portal')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -228,9 +228,9 @@ function serveDashboard(role, token) {
   var plan = getPlanLevel();
   var schoolName = getSettings().school_name || 'School Portal';
 
-  // ─ Plan-based role blocking ──────────────────────────────────
+  // - Plan-based role blocking ----------------------------------
   // Basic plan: principal/vp/headteacher accounts exist only for report
-  // signatures — they are NOT granted interactive dashboard access.
+  // signatures - they are NOT granted interactive dashboard access.
   if (plan < PLAN_LEVELS.standard) {
     if (['principal', 'vp', 'headteacher'].indexOf(role) !== -1) {
       return servePlanBlockedPage(
@@ -267,7 +267,7 @@ function serveDashboard(role, token) {
   t.sessionToken = token;
   t.userRole = role;
   t.scriptUrl = ScriptApp.getService().getUrl();
-  return t.evaluate().setTitle(schoolName + ' — ' + titleCase(role.replace('_', ' ')))
+  return t.evaluate().setTitle(schoolName + ' - ' + titleCase(role.replace('_', ' ')))
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -278,7 +278,7 @@ function serveDashboard(role, token) {
 function servePlanBlockedPage(schoolName, heading, message) {
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8">';
   html += '<meta name="viewport" content="width=device-width, initial-scale=1">';
-  html += '<title>' + schoolName + ' — Access Restricted</title>';
+  html += '<title>' + schoolName + ' - Access Restricted</title>';
   html += '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">';
   html += '<style>';
   html += 'body{margin:0;padding:0;min-height:100vh;display:flex;align-items:center;justify-content:center;';
@@ -303,7 +303,7 @@ function servePlanBlockedPage(schoolName, heading, message) {
   html += '<div class="school">' + schoolName + ' &bull; School Management Portal</div>';
   html += '</div></body></html>';
   return HtmlService.createHtmlOutput(html)
-    .setTitle(schoolName + ' — Access Restricted')
+    .setTitle(schoolName + ' - Access Restricted')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -311,7 +311,7 @@ function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
-// ─── AUTH ENDPOINTS ──────────────────────────────────────────
+// --- AUTH ENDPOINTS ------------------------------------------
 
 function loginUser(email, password) {
   try {
@@ -401,7 +401,7 @@ function getPublicBranding() {
   };
 }
 
-// ─── ROLE CHECK HELPER ───────────────────────────────────────
+// --- ROLE CHECK HELPER ---------------------------------------
 
 function requireRole(token, roles) {
   var s = validateSession(token);
@@ -427,7 +427,7 @@ function requireRole(token, roles) {
   return s;
 }
 
-// ─── SUBSCRIPTION PLAN ENFORCEMENT ──────────────────────────
+// --- SUBSCRIPTION PLAN ENFORCEMENT --------------------------
 
 var PLAN_LEVELS = { basic: 1, standard: 2, deluxe: 3, super_deluxe: 4 };
 
@@ -466,7 +466,7 @@ function requirePlan(minPlan, token) {
   }
 }
 
-// ─── ADMIN ENDPOINTS ─────────────────────────────────────────
+// --- ADMIN ENDPOINTS -----------------------------------------
 
 function adminGetStats(token) { requireRole(token,['admin','admin_assistant']); return getAdminStats(); }
 function adminGetUsers(token) { 
@@ -645,7 +645,7 @@ function adminGetStudentSubjects(token, sid) {
   var all = getAllSubjects(); // Already filtered by institution_type (primary/secondary/both)
   var enrolledIds = enrolled.map(function(s){ return String(s.id || s.iD); });
 
-  // Student's class — sheet column "Class" maps to key "class" via toCamelCase
+  // Student's class - sheet column "Class" maps to key "class" via toCamelCase
   var studentClassName = String(student.class || student.className || '').trim().toLowerCase();
 
   var available = all.filter(function(sub){
@@ -670,7 +670,7 @@ function adminGetStudentSubjects(token, sid) {
 function adminGetSchoolPerformance(token, term, sess) { requireRole(token,['admin','admin_assistant']); return getSchoolPerformanceOverview(term, sess); }
 function adminComputePositions(token, className, term, sess) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('COMPUTE_POSITIONS', {className:className, term:term, sess:sess}, s.userId); return computeClassPositions(className, term, sess); }
 
-// ─── PENDING TASK ENDPOINTS (Maker-Checker — Deluxe Plan only) ──────────────
+// --- PENDING TASK ENDPOINTS (Maker-Checker - Deluxe Plan only) --------------
 function adminGetPendingTasks(token) {
   requirePlan('deluxe', token);
   requireRole(token, 'admin');
@@ -743,7 +743,7 @@ function adminRejectTask(token, taskId, reason) {
   return updatePendingTaskStatus(taskId, 'rejected', reason, s.userId);
 }
 
-// ─── PRINCIPAL / VP ENDPOINTS ────────────────────────────────
+// --- PRINCIPAL / VP ENDPOINTS --------------------------------
 
 function principalGetStats(token) {
   var s = requireRole(token, ['principal','vp', 'headteacher']);
@@ -800,7 +800,7 @@ function principalGetClasses(token) {
   return s.section === 'both' ? classes : classes.filter(function(c) { return c.section === s.section; });
 }
 
-// ─── TEACHER ENDPOINTS ───────────────────────────────────────
+// --- TEACHER ENDPOINTS ---------------------------------------
 
 function teacherGetMySubjects(token) {
   var s = requireRole(token, ['teacher','primary_teacher']);
@@ -935,7 +935,7 @@ function teacherComputePositions(token, className, term, sess) {
   return computeClassPositions(className, term, sess);
 }
 
-// ─── ACCOUNTS ENDPOINTS ──────────────────────────────────────
+// --- ACCOUNTS ENDPOINTS --------------------------------------
 
 function accountsGetFeeStructures(token) {
   var s = requireRole(token,'accounts');
@@ -1019,7 +1019,7 @@ function accountsGetStudents(token) {
   return s.section === 'both' ? students : students.filter(function(st) { return st.section === s.section; });
 }
 
-// ─── PARENT ENDPOINTS ────────────────────────────────────────
+// --- PARENT ENDPOINTS ----------------------------------------
 
 function parentGetChildren(token) {
   var s = requireRole(token,'parent');
@@ -1112,7 +1112,7 @@ function _verifyTeacherSubjectAuth(teacherId, subjectId) {
   throw new Error('Access denied. You are not assigned to this subject or class.');
 }
 
-// ─── DATABASE SETUP ──────────────────────────────────────────
+// --- DATABASE SETUP ------------------------------------------
 
 function setupSheets() {
   var ss = getSpreadsheet();

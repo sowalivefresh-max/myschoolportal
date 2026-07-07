@@ -3,10 +3,10 @@
  * Centralized API client for communicating with the Google Apps Script Backend.
  */
 
-// ─── DEPLOYMENT CONFIGURATION ────────────────────────────────────────────────
+// --- DEPLOYMENT CONFIGURATION ------------------------------------------------
 // Replace the URL below with your own Google Apps Script Web App deployment URL.
 // You get this URL from: Apps Script → Deploy → Manage deployments → Web App URL
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz36_wTlzIdIzSH55Ezf5WcVwrNaOqr7RlbfO2uUIj6meSVLddAMakei9MIsxyXDrZg/exec";
 
 /**

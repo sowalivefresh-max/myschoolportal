@@ -1,14 +1,14 @@
 /**
  * ============================================================
- *  ABECEDARIAN ACADEMY — SCHOOL MANAGEMENT PORTAL
- *  Utils.gs  —  Core Utility & Helper Functions
+ *  ABECEDARIAN ACADEMY - SCHOOL MANAGEMENT PORTAL
+ *  Utils.gs  -  Core Utility & Helper Functions
  * ============================================================
  *  Grading: Nigerian A1–F9 system
  *  Assessment: CA1(10) + CA2(10) + CA3(10) + Exam(70) = 100
  * ============================================================
  */
 
-// ─── ID Generation ──────────────────────────────────────────
+// --- ID Generation ------------------------------------------
 
 /**
  * Generate a unique alphanumeric ID (12 characters).
@@ -34,7 +34,7 @@ function generateReceiptRef() {
   return 'RCT-' + y + m + d + '-' + rand;
 }
 
-// ─── Input Validation ────────────────────────────────────────
+// --- Input Validation ----------------------------------------
 
 /**
  * Validate a data object against a set of field rules.
@@ -98,7 +98,7 @@ function validateInput(data, rules) {
   return { valid: true };
 }
 
-// ─── Sheet Operations ────────────────────────────────────────
+// --- Sheet Operations ----------------------------------------
 
 /**
  * Find the 1-based row index of a record by its ID (column A).
@@ -196,7 +196,7 @@ function toCamelCase(str) {
   return result.charAt(0).toLowerCase() + result.slice(1);
 }
 
-// ─── Nigerian Grading System ─────────────────────────────────
+// --- Nigerian Grading System ---------------------------------
 
 /**
  * Compute Nigerian A1–F9 grade from total score (0–100).
@@ -256,7 +256,7 @@ function computeTotal(ca1, ca2, ca3, exam) {
   return Math.round(total * 10) / 10;
 }
 
-// ─── Auto Comment Generation ─────────────────────────────────
+// --- Auto Comment Generation ---------------------------------
 
 /**
  * Generate class teacher comment based on performance data.
@@ -327,7 +327,7 @@ function generatePrincipalComment(average, position, totalStudents, studentName)
   }
 }
 
-// ─── Date & Formatting Utilities ────────────────────────────
+// --- Date & Formatting Utilities ----------------------------
 
 /**
  * Format a date to "DD Mon YYYY" display format.
@@ -359,7 +359,7 @@ function formatNaira(amount) {
   return '₦' + n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// ─── Validation Utilities ────────────────────────────────────
+// --- Validation Utilities ------------------------------------
 
 /**
  * Validate email format.
@@ -384,7 +384,7 @@ function safeInt(val, def) {
   return isNaN(n) ? (def !== undefined ? def : 0) : n;
 }
 
-// ─── Audit Logging ───────────────────────────────────────────
+// --- Audit Logging -------------------------------------------
 
 /**
  * Write an entry to the AuditLogs sheet.
@@ -420,7 +420,7 @@ function getAuditLogs() {
   return logs.slice(0, 500);
 }
 
-// ─── Image Utility ────────────────────────────────────────────
+// --- Image Utility --------------------------------------------
 
 /**
  * Convert a public URL or Google Drive URL to a Base64 data URI.
@@ -451,7 +451,7 @@ function imageToBase64(url) {
   return url;
 }
 
-// ─── Drive Folder Helper ──────────────────────────────────────
+// --- Drive Folder Helper --------------------------------------
 
 /**
  * Get or create a Google Drive folder by name.
@@ -483,7 +483,7 @@ function uploadReceiptToDrive(base64Data, filename) {
   }
 }
 
-// ─── String Utilities ────────────────────────────────────────
+// --- String Utilities ----------------------------------------
 
 function capitalize(str) {
   if (!str) return '';
@@ -506,7 +506,7 @@ function ordinal(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-// ─── Automated Backup ───────────────────────────────────────
+// --- Automated Backup ---------------------------------------
 
 /**
  * Creates a copy of the database file in a "Database Backups" folder.

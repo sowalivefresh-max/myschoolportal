@@ -1502,7 +1502,7 @@
         callServer('adminGenerateBulkResult', [AA.token, className, currentTerm, currentSession, rptType], function(res) {
           if(res.success) {
             showToast('Bulk results ready!', 'success');
-            openPDFViewer(res.previewUrl, res.downloadUrl, className + ' â€” Bulk Results');
+            openPDFViewer(res.previewUrl, res.downloadUrl, className + ' - Bulk Results');
           } else {
             showToast(res.message || 'Failed to generate results.', 'error');
           }

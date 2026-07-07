@@ -1,9 +1,9 @@
 /* ============================================================
-   ABECEDARIAN ACADEMY — Shared Frontend JavaScript
+   ABECEDARIAN ACADEMY - Shared Frontend JavaScript
    Decoupled version: uses fetch() via api.js instead of google.script.run
    ============================================================ */
 
-// ─── Session Management ──────────────────────────────────────
+// --- Session Management --------------------------------------
 
 var AA = {
   token: null,
@@ -164,7 +164,7 @@ var AA = {
   }
 };
 
-// ─── Server Call Wrapper ─────────────────────────────────────
+// --- Server Call Wrapper -------------------------------------
 
 /**
  * Wrapper for API calls with loading state management.
@@ -192,7 +192,7 @@ function callServer(fn, args, onSuccess, onError, showLoader) {
     });
 }
 
-// ─── Loading Overlay ─────────────────────────────────────────
+// --- Loading Overlay -----------------------------------------
 
 function showLoading(text) {
   var el = document.getElementById('aa-loading');
@@ -213,7 +213,7 @@ function hideLoading() {
   if (el) el.style.display = 'none';
 }
 
-// ─── Toast Notifications ─────────────────────────────────────
+// --- Toast Notifications -------------------------------------
 
 function showToast(message, type, duration) {
   var container = document.getElementById('aa-toast-container');
@@ -233,7 +233,7 @@ function showToast(message, type, duration) {
   setTimeout(function() { if (toast.parentNode) toast.remove(); }, duration || 4000);
 }
 
-// ─── Tab System ───────────────────────────────────────────────
+// --- Tab System -----------------------------------------------
 
 function initTabs(tabGroupId) {
   var group = document.getElementById(tabGroupId);
@@ -256,7 +256,7 @@ function switchTab(tabGroupId, tabId) {
   if (tab) tab.click();
 }
 
-// ─── Modal System ─────────────────────────────────────────────
+// --- Modal System ---------------------------------------------
 
 function openModal(id) {
   var m = document.getElementById(id);
@@ -275,7 +275,7 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// ─── Sidebar ──────────────────────────────────────────────────
+// --- Sidebar --------------------------------------------------
 
 function initSidebar() {
   var toggle = document.getElementById('aa-menu-toggle');
@@ -292,7 +292,7 @@ function initSidebar() {
   });
 }
 
-// ─── Nav Item Activation ──────────────────────────────────────
+// --- Nav Item Activation --------------------------------------
 
 function setActiveNav(id) {
   document.querySelectorAll('.aa-nav-item').forEach(function(el) { el.classList.remove('active'); });
@@ -300,7 +300,7 @@ function setActiveNav(id) {
   if (el) el.classList.add('active');
 }
 
-// ─── Form Utilities ───────────────────────────────────────────
+// --- Form Utilities -------------------------------------------
 
 function getFormData(formId) {
   var form = document.getElementById(formId);
@@ -343,7 +343,7 @@ function setFormData(formId, data) {
   });
 }
 
-// ─── Table Utilities ──────────────────────────────────────────
+// --- Table Utilities ------------------------------------------
 
 function buildTable(tableId, columns, rows, actionFn) {
   var tbody = document.querySelector('#' + tableId + ' tbody');
@@ -376,7 +376,7 @@ function filterTable(inputId, tableId) {
   });
 }
 
-// ─── Formatting Utilities ────────────────────────────────────
+// --- Formatting Utilities ------------------------------------
 
 function safeFloat(val, def) {
   var f = parseFloat(val);
@@ -429,7 +429,7 @@ function formatAttPct(pct) {
   return '<span style="font-weight:600;color:' + color + '">' + n + '%</span>';
 }
 
-// ─── Pagination ───────────────────────────────────────────────
+// --- Pagination -----------------------------------------------
 
 var paginationState = {};
 
@@ -451,7 +451,7 @@ function renderPagination(containerId, total, pageSize, currentPage, onPage) {
   el.innerHTML = html;
 }
 
-// ─── Confirm Dialog ───────────────────────────────────────────
+// --- Confirm Dialog -------------------------------------------
 
 function aaConfirm(message, onConfirm) {
   var existing = document.getElementById('aa-confirm-modal');
@@ -473,7 +473,7 @@ function aaConfirm(message, onConfirm) {
   };
 }
 
-// ─── PDF Viewer ───────────────────────────────────────────────
+// --- PDF Viewer -----------------------------------------------
 
 function openPDFViewer(previewUrl, downloadUrl, title) {
   var existing = document.getElementById('aa-pdf-modal');
@@ -494,7 +494,7 @@ function openPDFViewer(previewUrl, downloadUrl, title) {
   document.body.appendChild(modal);
 }
 
-// ─── Export Table to CSV ──────────────────────────────────────
+// --- Export Table to CSV --------------------------------------
 
 function exportTableCSV(tableId, filename) {
   var table = document.getElementById(tableId);
@@ -511,7 +511,7 @@ function exportTableCSV(tableId, filename) {
   link.click();
 }
 
-// ─── Score Colour Helper ─────────────────────────────────────
+// --- Score Colour Helper -------------------------------------
 
 function scoreColor(score) {
   var n = parseFloat(score) || 0;
@@ -522,7 +522,7 @@ function scoreColor(score) {
   return '#dc2626';
 }
 
-// ─── Image Utilities ─────────────────────────────────────────
+// --- Image Utilities -----------------------------------------
 
 function resizeAndCompressImage(file, maxDim, quality, callback) {
   if (!file) return;
@@ -571,7 +571,7 @@ function adminResetPassword(uid) {
   });
 }
 
-// ─── CSV Utilities ────────────────────────────────────────────
+// --- CSV Utilities --------------------------------------------
 
 function parseCSV(str) {
   var arr = [];
@@ -614,7 +614,7 @@ function downloadCSVTemplate(headers, filename) {
   document.body.removeChild(a);
 }
 
-// ─── DOM Ready ────────────────────────────────────────────────
+// --- DOM Ready ------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', function() {
   initSidebar();

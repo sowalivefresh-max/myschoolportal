@@ -1,9 +1,9 @@
 /**
- * ABECEDARIAN ACADEMY — Finance.gs
+ * ABECEDARIAN ACADEMY - Finance.gs
  * Fee structure, bill generation, payment tracking, expenses, receipts.
  */
 
-// ─── FEE STRUCTURE ──────────────────────────────────────────
+// --- FEE STRUCTURE ------------------------------------------
 
 function getAllFeeStructures() { return getSheetData('FeeStructure'); }
 
@@ -106,7 +106,7 @@ function deleteFeeStructure(feeId) {
   return { success: true, message: 'Fee structure deleted.' };
 }
 
-// ─── BILL GENERATION ────────────────────────────────────────
+// --- BILL GENERATION ----------------------------------------
 
 /**
  * Generate bills for all active students in a term/session.
@@ -197,7 +197,7 @@ function getStudentBill(studentId, term, session) {
   }) || null;
 }
 
-// ─── PAYMENT RECORDING ──────────────────────────────────────
+// --- PAYMENT RECORDING --------------------------------------
 
 function recordPayment(data, recordedByUserId) {
   if (!data.studentId || !data.term || !data.session || !data.amount)
@@ -243,7 +243,7 @@ function recordPayment(data, recordedByUserId) {
     message: 'Payment of ' + formatNaira(amount) + ' recorded. Ref: ' + receiptRef };
 }
 
-// ─── PARENT WORKFLOW ──────────────────────────────────────────
+// --- PARENT WORKFLOW ------------------------------------------
 
 function parentSubmitPayment(data, recordedByUserId) {
   if (!data.studentId || !data.term || !data.session || !data.amount)
@@ -442,7 +442,7 @@ function getStudentLedger(studentId) {
   return { bills: bills, payments: payments, creditBalance: getStudentCreditBalance(studentId) };
 }
 
-// ─── DEBTORS ────────────────────────────────────────────────
+// --- DEBTORS ------------------------------------------------
 
 function getDebtors(term, session) {
   return getAllBills({ term: term, session: session }).filter(function(b) {
@@ -450,7 +450,7 @@ function getDebtors(term, session) {
   }).sort(function(a, b) { return safeFloat(b.balance, 0) - safeFloat(a.balance, 0); });
 }
 
-// ─── EXPENSES ───────────────────────────────────────────────
+// --- EXPENSES -----------------------------------------------
 
 function getAllExpenses(filters) {
   var expenses = getSheetData('Expenses');
@@ -482,7 +482,7 @@ function deleteExpense(expenseId, userId) {
   return { success: true, message: 'Expense deleted.' };
 }
 
-// ─── INCOME & EXPENDITURE REPORT ────────────────────────────
+// --- INCOME & EXPENDITURE REPORT ----------------------------
 
 function getIncomeExpenseReport(term, session) {
   // Only count Approved payments as confirmed income
@@ -511,7 +511,7 @@ function getIncomeExpenseReport(term, session) {
   };
 }
 
-// ─── FINANCIAL DASHBOARD STATS ───────────────────────────────
+// --- FINANCIAL DASHBOARD STATS -------------------------------
 
 function getFinancialDashboardStats(term, session, section) {
   var filters = { term: term, session: session };
