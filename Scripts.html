@@ -225,12 +225,12 @@ function showToast(message, type, duration) {
     document.body.appendChild(container);
   }
 
-  var icons = { success: 'âœ…', error: 'âŒ', warning: 'âš ï¸', info: 'â„¹ï¸' };
+  var icons = { success: '&#10003;', error: '&#10007;', warning: '&#9888;', info: '&#8505;' };
   var t = type || 'info';
 
   var toast = document.createElement('div');
   toast.className = 'aa-toast ' + t;
-  toast.innerHTML = '<span class="aa-toast-icon">' + (icons[t] || 'â„¹ï¸') + '</span>' +
+  toast.innerHTML = '<span class="aa-toast-icon">' + (icons[t] || ''') + '</span>' +
     '<span class="aa-toast-msg">' + message + '</span>' +
     '<button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;padding:0 0 0 8px;color:#888;font-size:16px;">Ã-</button>';
   container.appendChild(toast);
@@ -386,7 +386,7 @@ function safeFloat(val, def) {
 
 function formatNaira(amount) {
   var n = parseFloat(amount) || 0;
-  return 'â‚¦' + n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '...' + n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDate(dateStr) {
@@ -446,8 +446,8 @@ function renderPagination(containerId, total, pageSize, currentPage, onPage) {
   if (totalPages <= 1) { el.innerHTML = ''; return; }
   var html = '<div class="d-flex align-items-center gap-2" style="font-size:12px;">';
   html += '<span class="text-muted">Page ' + currentPage + ' of ' + totalPages + '</span>';
-  html += '<button class="aa-btn aa-btn-outline aa-btn-xs" ' + (currentPage <= 1 ? 'disabled' : '') + ' onclick="(' + onPage + ')(' + (currentPage - 1) + ')">â€¹ Prev</button>';
-  html += '<button class="aa-btn aa-btn-outline aa-btn-xs" ' + (currentPage >= totalPages ? 'disabled' : '') + ' onclick="(' + onPage + ')(' + (currentPage + 1) + ')">Next â€º</button>';
+  html += '<button class="aa-btn aa-btn-outline aa-btn-xs" ' + (currentPage <= 1 ? 'disabled' : '') + ' onclick="(' + onPage + ')(' + (currentPage - 1) + ')">&lsaquo; Prev</button>';
+  html += '<button class="aa-btn aa-btn-outline aa-btn-xs" ' + (currentPage >= totalPages ? 'disabled' : '') + ' onclick="(' + onPage + ')(' + (currentPage + 1) + ')">Next &rsaquo;</button>';
   html += '</div>';
   el.innerHTML = html;
 }
@@ -485,13 +485,13 @@ function openPDFViewer(previewUrl, downloadUrl, title) {
   modal.className = 'aa-modal-backdrop open';
   modal.innerHTML = '<div class="aa-modal aa-modal-lg">' +
     '<div class="aa-modal-header">' +
-    '<h5 class="aa-modal-title">ðŸ“„ ' + (title || 'Document Viewer') + '</h5>' +
-    '<button class="aa-modal-close" onclick="document.getElementById(\'aa-pdf-modal\').remove()">Ã-</button></div>' +
+    '<h5 class="aa-modal-title">&#128196; ' + (title || 'Document Viewer') + '</h5>' +
+    '<button class="aa-modal-close" onclick="document.getElementById(\'aa-pdf-modal\').remove()">&times;</button></div>' +
     '<div class="aa-modal-body" style="padding:0;">' +
     '<iframe src="' + previewUrl + '" style="width:100%;height:70vh;border:none;"></iframe></div>' +
     '<div class="aa-modal-footer">' +
     '<button class="aa-btn aa-btn-outline" onclick="document.getElementById(\'aa-pdf-modal\').remove()">Close</button>' +
-    '<a href="' + downloadUrl + '" target="_blank" class="aa-btn aa-btn-gold">â¬‡ Download</a>' +
+    '<a href="' + downloadUrl + '" target="_blank" class="aa-btn aa-btn-gold">&#8659; Download</a>' +
     '</div></div>';
   document.body.appendChild(modal);
 }
