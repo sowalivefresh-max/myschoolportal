@@ -319,29 +319,97 @@
       </div>
     </div>
   </div>
-
   <div class="aa-modal-backdrop" id="planModal">
-    <div class="aa-modal aa-modal-lg"><div class="aa-modal-header"><h5 class="aa-modal-title">Lesson Plan Editor</h5><button class="aa-modal-close" onclick="closeModal('planModal')">×</button></div>
-      <div class="aa-modal-body">
+    <div class="aa-modal aa-modal-lg">
+      <div class="aa-modal-header">
+        <h5 class="aa-modal-title"><i class="fa fa-book-open" style="margin-right:8px;opacity:.8;"></i>Lesson Plan Editor</h5>
+        <button class="aa-modal-close" onclick="closeModal('planModal')">×</button>
+      </div>
+      <div class="aa-modal-body" style="padding:0;">
         <form id="planForm">
           <input type="hidden" id="planId" name="id">
-          <div class="aa-grid-2 mb-3">
-            <div class="aa-form-group mb-0"><label class="aa-label">Subject</label><select id="planSubject" name="subjectId" class="aa-select" required></select></div>
-            <div class="aa-form-group mb-0"><label class="aa-label">Class</label><input type="text" id="planClass" name="className" class="aa-input" readonly></div>
+
+          <!-- SECTION 1: Plan Info -->
+          <div style="padding:16px 20px 12px;background:var(--aa-primary,#0d2137);border-bottom:1px solid rgba(255,255,255,.08);">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.65);">&#9312; Plan Information</span>
           </div>
-          <div class="aa-grid-2 mb-3">
-            <div class="aa-form-group mb-0"><label class="aa-label">Week</label><input type="text" name="week" class="aa-input" required></div>
-            <div class="aa-form-group mb-0"><label class="aa-label">Topic</label><input type="text" name="topic" class="aa-input" required></div>
+          <div style="padding:16px 20px 4px;">
+            <div class="aa-grid-2 mb-3">
+              <div class="aa-form-group mb-0">
+                <label class="aa-label">Subject <span style="color:#e74c3c;">*</span></label>
+                <select id="planSubject" name="subjectId" class="aa-select" required></select>
+              </div>
+              <div class="aa-form-group mb-0">
+                <label class="aa-label">Class</label>
+                <input type="text" id="planClass" name="className" class="aa-input" readonly>
+              </div>
+            </div>
+            <div class="aa-grid-2 mb-3">
+              <div class="aa-form-group mb-0">
+                <label class="aa-label">Week <span style="color:#e74c3c;">*</span></label>
+                <input type="text" name="week" class="aa-input" placeholder="e.g. Week 3" required>
+              </div>
+              <div class="aa-form-group mb-0">
+                <label class="aa-label">Topic / Sub-topic <span style="color:#e74c3c;">*</span></label>
+                <input type="text" name="topic" class="aa-input" placeholder="Lesson topic" required>
+              </div>
+            </div>
+            <div class="aa-form-group mb-2">
+              <label class="aa-label">Reference Book(s)</label>
+              <input type="text" name="referenceBook" class="aa-input" placeholder="e.g. Primary Mathematics Book 4 (Pg. 22), Scheme of Work">
+            </div>
           </div>
-          <div class="aa-form-group"><label class="aa-label">Objectives</label><textarea name="objectives" class="aa-textarea"></textarea></div>
-          <div class="aa-form-group"><label class="aa-label">Teaching Aids</label><input type="text" name="teachingAids" class="aa-input"></div>
-          <div class="aa-form-group"><label class="aa-label">Presentation Steps</label><textarea name="presentationSteps" class="aa-textarea" style="min-height:100px;"></textarea></div>
-          <div class="aa-form-group"><label class="aa-label">Evaluation & Assignment</label><textarea name="evaluation" class="aa-textarea"></textarea></div>
+
+          <!-- SECTION 2: Content & Methodology -->
+          <div style="padding:10px 20px 10px;background:var(--aa-primary,#0d2137);border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.65);">&#9313; Content &amp; Methodology</span>
+          </div>
+          <div style="padding:16px 20px 4px;">
+            <div class="aa-form-group">
+              <label class="aa-label">Behavioural Objectives</label>
+              <textarea name="objectives" class="aa-textarea" placeholder="By the end of the lesson, pupils should be able to..."></textarea>
+            </div>
+            <div class="aa-form-group">
+              <label class="aa-label">Entry Behaviour / Prior Knowledge</label>
+              <textarea name="entryBehaviour" class="aa-textarea" style="min-height:80px;" placeholder="What prior knowledge do students already have? e.g. Pupils can count from 1 to 100."></textarea>
+            </div>
+            <div class="aa-form-group mb-2">
+              <label class="aa-label">Teaching Aids / Instructional Materials</label>
+              <input type="text" name="teachingAids" class="aa-input" placeholder="e.g. Charts, abacus, number cards, whiteboard">
+            </div>
+          </div>
+
+          <!-- SECTION 3: Presentation -->
+          <div style="padding:10px 20px 10px;background:var(--aa-primary,#0d2137);border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.65);">&#9314; Lesson Presentation</span>
+          </div>
+          <div style="padding:16px 20px 4px;">
+            <div class="aa-form-group mb-2">
+              <label class="aa-label">Step-by-Step Presentation</label>
+              <textarea name="presentationSteps" class="aa-textarea" style="min-height:130px;" placeholder="Step 1 — Introduction&#10;Step 2 — Development&#10;Step 3 — Application&#10;Step 4 — Summary"></textarea>
+            </div>
+          </div>
+
+          <!-- SECTION 4: Assessment -->
+          <div style="padding:10px 20px 10px;background:var(--aa-primary,#0d2137);border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.65);">&#9315; Assessment</span>
+          </div>
+          <div style="padding:16px 20px 16px;">
+            <div class="aa-form-group">
+              <label class="aa-label">Evaluation</label>
+              <textarea name="evaluation" class="aa-textarea" placeholder="Questions or activities used to assess understanding during/after the lesson."></textarea>
+            </div>
+            <div class="aa-form-group mb-0">
+              <label class="aa-label">Assignment / Homework</label>
+              <textarea name="assignment" class="aa-textarea" placeholder="Take-home tasks or exercises for students to complete."></textarea>
+            </div>
+          </div>
         </form>
       </div>
-      <div class="aa-modal-footer">
+      <div class="aa-modal-footer" style="gap:8px;">
         <button class="aa-btn aa-btn-outline" onclick="closeModal('planModal')">Cancel</button>
-        <button class="aa-btn aa-btn-primary" onclick="saveLessonPlan()">Save Draft</button>
+        <button class="aa-btn aa-btn-secondary" onclick="saveLessonPlan()" id="btnSaveDraft"><i class="fa fa-save" style="margin-right:6px;"></i>Save Draft</button>
+        <button class="aa-btn aa-btn-primary" onclick="saveThenSubmitPlan()" id="btnSaveSubmit"><i class="fa fa-paper-plane" style="margin-right:6px;"></i>Save &amp; Submit</button>
       </div>
     </div>
   </div>
@@ -664,6 +732,27 @@
       callServer(fn, [AA.token, id||data, data], function(res) {
         showToast(res.message, res.success?'success':'error'); if(res.success) { closeModal('planModal'); loadMyLessonPlans(); }
       }, null, true);
+    }
+    function saveThenSubmitPlan() {
+      var data = getFormData('planForm'); data.term = currentTerm; data.session = currentSession;
+      var id = data.id; var fn = id ? 'teacherUpdateLessonPlan' : 'teacherCreateLessonPlan';
+      var btn = document.getElementById('btnSaveSubmit');
+      btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin" style="margin-right:6px;"></i>Saving...';
+      callServer(fn, [AA.token, id||data, data], function(res) {
+        if (!res.success) {
+          btn.disabled = false; btn.innerHTML = '<i class="fa fa-paper-plane" style="margin-right:6px;"></i>Save &amp; Submit';
+          return showToast(res.message, 'error');
+        }
+        var planId = res.id || id;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin" style="margin-right:6px;"></i>Submitting...';
+        callServer('teacherSubmitLessonPlan', [AA.token, planId], function(res2) {
+          btn.disabled = false; btn.innerHTML = '<i class="fa fa-paper-plane" style="margin-right:6px;"></i>Save &amp; Submit';
+          showToast(res2.message, res2.success?'success':'error');
+          if(res2.success) { closeModal('planModal'); loadMyLessonPlans(); }
+        }, function() { btn.disabled = false; btn.innerHTML = '<i class="fa fa-paper-plane" style="margin-right:6px;"></i>Save &amp; Submit'; }, true);
+      }, function() {
+        btn.disabled = false; btn.innerHTML = '<i class="fa fa-paper-plane" style="margin-right:6px;"></i>Save &amp; Submit';
+      }, true);
     }
     function editLessonPlan(id) {
       callServer('teacherGetMyLessonPlans', [AA.token, currentTerm, currentSession], function(data) {

@@ -13,7 +13,7 @@ function createLessonPlan(teacherId, data) {
     data.entryBehaviour || '', data.presentationSteps || '',
     data.evaluation || '', data.assignment || '',
     data.week || '', data.term || '', data.session || '',
-    'draft', '', '', new Date().toISOString()]);
+    'draft', '', '', new Date().toISOString(), data.referenceBook || '']);
   logAudit(teacherId, 'CREATE_LESSON_PLAN', 'Topic: ' + data.topic);
   return { success: true, id: id, message: 'Lesson plan saved as draft.' };
 }
@@ -34,6 +34,7 @@ function updateLessonPlan(teacherId, planId, data) {
   if (data.evaluation !== undefined) sheet.getRange(row, 10).setValue(data.evaluation);
   if (data.assignment !== undefined) sheet.getRange(row, 11).setValue(data.assignment);
   if (data.week !== undefined) sheet.getRange(row, 12).setValue(data.week);
+  if (data.referenceBook !== undefined) sheet.getRange(row, 19).setValue(data.referenceBook);
   sheet.getRange(row, 15).setValue('draft');
   return { success: true, message: 'Lesson plan updated.' };
 }
