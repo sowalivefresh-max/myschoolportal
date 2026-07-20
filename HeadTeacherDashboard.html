@@ -245,11 +245,23 @@
         buildTable('plansTable', [
           { key:'teacherName' }, { key:'subjectName' }, { key:'class' }, { key:'topic' },
           { key:'createdAt', render: function(r){ return formatDate(r.createdAt); } }
-        ], data, function(r) { return '<button class="aa-btn aa-btn-outline aa-btn-xs" onclick="reviewPlan(\''+(r.id||r.iD)+'\')">Review</button>'; });
+        ], data, function(r) {
+          var id = r.id || r.iD;
+          return '<button class="aa-btn aa-btn-info aa-btn-xs" onclick="viewPlanPDF(\''+id+'\')" title="View PDF"><i class="fa fa-eye"></i> View</button> ' +
+                 '<button class="aa-btn aa-btn-outline aa-btn-xs" onclick="reviewPlan(\''+id+'\')" title="Approve or Reject"><i class="fa fa-clipboard-check"></i> Review</button>';
+        });
       }, null, true);
     }
 
     function reviewPlan(id) { document.getElementById('reviewPlanId').value = id; document.getElementById('reviewNote').value = ''; openModal('reviewModal'); }
+
+    function viewPlanPDF(id) {
+      showToast('Generating PDF, please wait...', 'info');
+      callServer('teacherGenerateLessonPlanPDF', [AA.token, id], function(res) {
+        if (res.success) openPDFViewer(res.previewUrl, res.downloadUrl, 'Lesson Plan');
+        else showToast(res.message, 'error');
+      }, null, true);
+    }
     function processPlan(action) {
       var id = document.getElementById('reviewPlanId').value;
       var note = document.getElementById('reviewNote').value;
