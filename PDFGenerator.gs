@@ -374,9 +374,14 @@ function generateLessonPlanPDF(planId) {
     '</div>';
 
   var sections = [
-    ['Topic', plan.topic], ['Objectives', plan.objectives], ['Teaching Aids', plan.teachingAids],
-    ['Entry Behaviour', plan.entryBehaviour], ['Presentation Steps', plan.presentationSteps],
-    ['Evaluation', plan.evaluation], ['Assignment', plan.assignment]
+    ['Topic', plan.topic],
+    ['Reference Book(s)', plan.referenceBook],
+    ['Behavioural Objectives', plan.objectives],
+    ['Entry Behaviour / Prior Knowledge', plan.entryBehaviour],
+    ['Teaching Aids / Instructional Materials', plan.teachingAids],
+    ['Step-by-Step Presentation', plan.presentationSteps],
+    ['Evaluation', plan.evaluation],
+    ['Assignment / Homework', plan.assignment]
   ];
   sections.forEach(function(sec) {
     if (sec[1]) {
@@ -393,5 +398,10 @@ function generateLessonPlanPDF(planId) {
   var folder = getOrCreateFolder(schoolName + ' - Lesson Plans');
   var file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return { success: true, pdfUrl: file.getUrl(), downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId() };
+  return {
+    success: true,
+    pdfUrl: file.getUrl(),
+    downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId(),
+    previewUrl: 'https://drive.google.com/file/d/' + file.getId() + '/preview'
+  };
 }
