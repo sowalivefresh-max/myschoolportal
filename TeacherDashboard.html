@@ -409,8 +409,9 @@
         var sSel = document.getElementById('scoreSubjectSelect'); sSel.innerHTML='<option value="">-- Select Subject --</option>';
         data.forEach(function(s) {
           var id = s.id||s.iD;
-          var opt = '<option value="'+id+'">'+AA.escapeHTML(s.subjectName)+' ('+AA.escapeHTML(s.class||'All')+')</option>';
-          pSel.innerHTML += opt; sSel.innerHTML += opt;
+          var planOpt  = '<option value="'+id+'">'+AA.escapeHTML(s.subjectName)+'</option>';
+          var scoreOpt = '<option value="'+id+'">'+AA.escapeHTML(s.subjectName)+' ('+AA.escapeHTML(s.class||'All')+')</option>';
+          pSel.innerHTML += planOpt; sSel.innerHTML += scoreOpt;
         });
       }, null, true);
 
