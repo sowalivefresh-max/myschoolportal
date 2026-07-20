@@ -356,14 +356,34 @@ function generateLessonPlanPDF(planId) {
   var settings = getSettings();
   var schoolName = settings.school_name || 'My School';
 
+  var logoB64 = imageToBase64(settings.school_logo_url || '');
+  var logoTag = logoB64
+    ? '<img src="' + logoB64 + '" style="width:65px;height:65px;object-fit:contain;">'
+    : '<div style="width:65px;height:65px;background:#0d1b2a;display:flex;align-items:center;justify-content:center;color:#f0a500;font-weight:bold;font-size:14px;">AA</div>';
+
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-    '<style>body{font-family:Arial,sans-serif;padding:30px;font-size:13px;} h2{color:#0d1b2a;} ' +
-    '.hdr{border-bottom:2px solid #0d1b2a;padding-bottom:10px;margin-bottom:15px;} ' +
-    '.section{margin-bottom:15px;} .sec-title{font-weight:bold;color:#0d1b2a;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:6px;} ' +
-    '.info-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:15px;} ' +
-    '.info-item{border:1px solid #ddd;padding:6px 10px;border-radius:4px;min-width:150px;} ' +
-    '.info-label{font-size:10px;color:#888;} .info-val{font-weight:bold;}</style></head><body>' +
-    '<div class="hdr"><h2>' + schoolName + '</h2><h3 style="margin:0;color:#555;">Lesson Plan</h3></div>' +
+    '<style>' +
+    'body{font-family:Arial,sans-serif;padding:30px;font-size:13px;color:#1a1a1a;}' +
+    '.hdr{display:flex;align-items:center;border-bottom:3px solid #0d1b2a;padding-bottom:12px;margin-bottom:18px;}' +
+    '.hdr-logo{width:65px;flex-shrink:0;}' +
+    '.hdr-title{flex:1;text-align:center;}' +
+    '.hdr-spacer{width:65px;flex-shrink:0;}' +
+    '.school-name{font-size:18px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#0d1b2a;margin:0;}' +
+    '.plan-label{font-size:13px;color:#555;margin:3px 0 0;font-style:italic;}' +
+    '.section{margin-bottom:15px;}' +
+    '.sec-title{font-weight:bold;color:#0d1b2a;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:6px;}' +
+    '.info-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:15px;}' +
+    '.info-item{border:1px solid #ddd;padding:6px 10px;border-radius:4px;min-width:150px;}' +
+    '.info-label{font-size:10px;color:#888;} .info-val{font-weight:bold;}' +
+    '</style></head><body>' +
+    '<div class="hdr">' +
+      '<div class="hdr-logo">' + logoTag + '</div>' +
+      '<div class="hdr-title">' +
+        '<p class="school-name">' + schoolName + '</p>' +
+        '<p class="plan-label">Lesson Plan</p>' +
+      '</div>' +
+      '<div class="hdr-spacer"></div>' +
+    '</div>' +
     '<div class="info-grid">' +
     '<div class="info-item"><div class="info-label">Subject</div><div class="info-val">' + (subj ? subj.subjectName : '') + '</div></div>' +
     '<div class="info-item"><div class="info-label">Class</div><div class="info-val">' + (plan.class || plan.className || '') + '</div></div>' +
