@@ -465,11 +465,12 @@ function generateStudentIDCardPDF(studentId) {
   // Card dimensions: CR80 landscape ≈ 85.6mm × 53.98mm → scale to ≈ 323px × 204px at 96dpi
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
     '<style>' +
-    'body{margin:0;padding:20px;background:#d9dde4;font-family:Arial,sans-serif;}' +
-    '.card{width:323px;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.35);margin:0 auto 30px;background:#fff;page-break-inside:avoid;}' +
+    'body{margin:0;padding:40px;background:#d9dde4;font-family:Arial,sans-serif;}' +
+    '.page-container{display:flex;gap:30px;justify-content:center;flex-wrap:wrap;}' +
+    '.card{width:323px;height:204px;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.35);background:#fff;page-break-inside:avoid;box-sizing:border-box;display:flex;flex-direction:column;}' +
 
     /* ---- FRONT: Header ---- */
-    '.card-front .header{position:relative;background:linear-gradient(135deg,#0a1628 0%,#112240 50%,#1a3a6e 100%);padding:11px 12px 14px;overflow:hidden;min-height:62px;}' +
+    '.card-front .header{position:relative;background:linear-gradient(135deg,#0a1628 0%,#112240 50%,#1a3a6e 100%);padding:11px 12px;overflow:hidden;flex-shrink:0;}' +
     /* decorative circles */
     '.card-front .hdr-circle-1{position:absolute;top:-18px;right:-18px;width:70px;height:70px;border-radius:50%;background:rgba(240,165,0,0.18);pointer-events:none;}' +
     '.card-front .hdr-circle-2{position:absolute;top:-8px;right:18px;width:38px;height:38px;border-radius:50%;background:rgba(240,165,0,0.1);pointer-events:none;}' +
@@ -484,10 +485,10 @@ function generateStudentIDCardPDF(studentId) {
     '.card-front .card-type-wrap{margin-top:4px;display:inline-block;background:rgba(240,165,0,0.2);border:1px solid rgba(240,165,0,0.5);border-radius:20px;padding:1px 7px;}' +
     '.card-front .card-label{color:#f0a500;font-size:6px;letter-spacing:1.5px;text-transform:uppercase;}' +
     /* gold rule below header */
-    '.card-front .gold-rule{height:3px;background:linear-gradient(90deg,#c07d00,#f0a500,#c07d00);}' +
+    '.card-front .gold-rule{height:3px;background:linear-gradient(90deg,#c07d00,#f0a500,#c07d00);flex-shrink:0;}' +
 
     /* ---- FRONT: Body ---- */
-    '.card-front .body{display:flex;align-items:stretch;min-height:110px;position:relative;background:#fff;}' +
+    '.card-front .body{flex:1;display:flex;align-items:stretch;position:relative;background:#fff;}' +
     /* dot-grid overlay */
     '.card-front .body-bg{position:absolute;inset:0;background-image:radial-gradient(circle,#c8d0dc 1px,transparent 1px);background-size:10px 10px;opacity:0.35;pointer-events:none;}' +
     /* left gold accent stripe */
@@ -498,7 +499,7 @@ function generateStudentIDCardPDF(studentId) {
     '.card-front .photo-frame img{width:100%;height:100%;object-fit:cover;display:block;}' +
     '.card-front .photo-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:30px;color:#aab;background:#e8edf2;}' +
     /* info column */
-    '.card-front .info-col{flex:1;padding:10px 10px 8px;position:relative;z-index:1;}' +
+    '.card-front .info-col{flex:1;padding:8px 10px;position:relative;z-index:1;}' +
     '.card-front .student-name{font-size:10.5px;font-weight:700;color:#0d1b2a;text-transform:uppercase;letter-spacing:.4px;margin:0 0 2px;line-height:1.3;border-bottom:1.5px solid #f0a500;padding-bottom:4px;}' +
     '.card-front .section-badge{display:inline-block;background:#0d1b2a;color:#f0a500;font-size:5.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:2px 6px;border-radius:10px;margin:3px 0 5px;}' +
     '.card-front .info-row{display:flex;gap:4px;margin-bottom:2.5px;font-size:8px;line-height:1.35;align-items:baseline;}' +
@@ -507,7 +508,7 @@ function generateStudentIDCardPDF(studentId) {
     '.card-front .info-val{color:#0d1b2a;font-weight:700;font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
 
     /* ---- FRONT: Footer ---- */
-    '.card-front .footer{background:linear-gradient(90deg,#0a1628,#1a3558,#0a1628);padding:5px 12px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;}' +
+    '.card-front .footer{background:linear-gradient(90deg,#0a1628,#1a3558,#0a1628);padding:5px 12px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;flex-shrink:0;height:24px;box-sizing:border-box;}' +
     '.card-front .footer-watermark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:7px;font-weight:700;color:rgba(255,255,255,0.05);text-transform:uppercase;letter-spacing:3px;white-space:nowrap;pointer-events:none;}' +
     '.card-front .footer-left{display:flex;align-items:center;gap:5px;}' +
     '.card-front .footer-dot{width:6px;height:6px;border-radius:50%;background:#f0a500;}' +
@@ -516,19 +517,20 @@ function generateStudentIDCardPDF(studentId) {
 
     /* ---- BACK ---- */
     '.card-back{position:relative;background:linear-gradient(160deg,#f8f9fb 0%,#eef0f4 100%);}' +
-    '.card-back .back-header{background:linear-gradient(135deg,#0d1b2a,#1a3558);padding:8px 12px;text-align:center;}' +
+    '.card-back .back-header{background:linear-gradient(135deg,#0d1b2a,#1a3558);padding:8px 12px;text-align:center;flex-shrink:0;}' +
     '.card-back .back-title{color:#f0a500;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:0;}' +
-    '.card-back .back-body{padding:10px 14px;position:relative;}' +
+    '.card-back .back-body{flex:1;padding:8px 14px;position:relative;display:flex;flex-direction:column;justify-content:center;}' +
     '.card-back .terms-title{font-size:8px;font-weight:700;color:#0d1b2a;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;}' +
     '.card-back .term-item{font-size:7.5px;color:#444;margin-bottom:3px;line-height:1.4;padding-left:10px;position:relative;}' +
     '.card-back .term-item::before{content:"•";position:absolute;left:0;color:#f0a500;font-weight:700;}' +
-    '.card-back .contact-box{border:1px solid #dde2ea;border-radius:5px;padding:6px 8px;margin:8px 0;background:rgba(255,255,255,0.7);}' +
+    '.card-back .contact-box{border:1px solid #dde2ea;border-radius:5px;padding:6px 8px;margin:6px 0;background:rgba(255,255,255,0.7);}' +
     '.card-back .contact-title{font-size:7px;font-weight:700;color:#0d1b2a;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;}' +
     '.card-back .contact-row{font-size:7.5px;color:#444;margin-bottom:2px;}' +
     '.card-back .contact-row span{font-weight:600;color:#0d1b2a;}' +
-    '.card-back .adm-strip{background:#0d1b2a;color:#f0a500;font-family:monospace;font-size:9px;font-weight:700;letter-spacing:3px;text-align:center;padding:5px;margin-top:6px;border-radius:0 0 10px 10px;}' +
-    '.page-break{page-break-after:always;}' +
+    '.card-back .adm-strip{background:#0d1b2a;color:#f0a500;font-family:monospace;font-size:9px;font-weight:700;letter-spacing:3px;text-align:center;padding:5px;flex-shrink:0;height:24px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;}' +
     '</style></head><body>';
+
+  html += '<div class="page-container">';
 
   // === FRONT OF CARD ===
   html += '<div class="card card-front">';
@@ -589,9 +591,6 @@ function generateStudentIDCardPDF(studentId) {
 
   html += '</div>'; // end card-front
 
-  // Page break between front and back
-  html += '<div class="page-break"></div>';
-
   // === BACK OF CARD ===
   html += '<div class="card card-back">';
   html += '<div class="back-header"><p class="back-title">' + schoolName + '</p></div>';
@@ -602,6 +601,7 @@ function generateStudentIDCardPDF(studentId) {
   html += '<div class="term-item">This card is non-transferable and must not be defaced.</div>';
   html += '<div class="term-item">Loss of card must be reported to the school office immediately.</div>';
   html += '<div class="term-item">If found, please return to the school office.</div>';
+
 
   if (schoolAddress || schoolPhone || schoolEmail) {
     html += '<div class="contact-box">';
@@ -616,6 +616,7 @@ function generateStudentIDCardPDF(studentId) {
   html += '<div class="adm-strip">&#9646;&#9646;&#9646; ' + admNo + ' &#9646;&#9646;&#9646;</div>';
   html += '</div>'; // end card-back
 
+  html += '</div>'; // end page-container
   html += '</body></html>';
 
   var blob = Utilities.newBlob(html, MimeType.HTML).getAs(MimeType.PDF)
