@@ -187,7 +187,10 @@ function getActionWhitelist() {
     'parentGetPayments':          parentGetPayments,
     'parentGetStudentCredit':     parentGetStudentCredit,
     'parentDownloadReceipt':      parentDownloadReceipt,
-    'parentSubmitPaymentData':    parentSubmitPaymentData
+    'parentSubmitPaymentData':    parentSubmitPaymentData,
+    'parentGenerateIDCard':       parentGenerateIDCard,
+    'principalGenerateIDCard':    principalGenerateIDCard,
+    'adminGenerateIDCard':        adminGenerateIDCard
   };
 }
 
@@ -1229,5 +1232,35 @@ function setupSheets() {
   setupBackupTrigger();
 
   return 'Setup complete! Admin login: admin@school.portal / admin123 (change this password immediately after first login!)';
+}
+
+// --- ID CARD HANDLERS ----------------------------------------
+
+function parentGenerateIDCard(token, studentId) {
+  var session = validateSession(token);
+  if (!session) return { success: false, message: 'Unauthorised.' };
+  // Parents may only generate cards for their own children
+  var user = getUserById(session.userId);
+  if (!user) return { success: false, message: 'User not found.' };
+  var linked = String(user.linkedStudentIds || '').split(',').map(function(s){ return s.trim(); });
+  if (linked.indexOf(String(studentId)) === -1)
+    return { success: false, message: 'Access denied: not your child.' };
+  return generateStudentIDCardPDF(studentId);
+}
+
+function principalGenerateIDCard(token, studentId) {
+  var session = validateSession(token);
+  if (!session) return { success: false, message: 'Unauthorised.' };
+  var allowed = ['principal', 'vp', 'headteacher', 'admin', 'admin_assistant', 'developer'];
+  if (allowed.indexOf(session.role) === -1) return { success: false, message: 'Access denied.' };
+  return generateStudentIDCardPDF(studentId);
+}
+
+function adminGenerateIDCard(token, studentId) {
+  var session = validateSession(token);
+  if (!session) return { success: false, message: 'Unauthorised.' };
+  var allowed = ['admin', 'admin_assistant', 'developer'];
+  if (allowed.indexOf(session.role) === -1) return { success: false, message: 'Access denied.' };
+  return generateStudentIDCardPDF(studentId);
 }
 

@@ -425,3 +425,147 @@ function generateLessonPlanPDF(planId) {
     previewUrl: 'https://drive.google.com/file/d/' + file.getId() + '/preview'
   };
 }
+
+// --- STUDENT ID CARD PDF -------------------------------------
+
+function generateStudentIDCardPDF(studentId) {
+  var student = getStudentById(studentId);
+  if (!student) return { success: false, message: 'Student not found.' };
+
+  var settings  = getSettings();
+  var schoolName    = settings.school_name    || 'My School';
+  var schoolMotto   = settings.school_motto   || '';
+  var schoolAddress = settings.school_address || '';
+  var schoolPhone   = settings.school_phone   || '';
+  var schoolEmail   = settings.school_email   || '';
+  var session       = settings.current_session || '';
+
+  var logoB64  = imageToBase64(settings.school_logo_url || '');
+  var photoB64 = student.photoUrl ? imageToBase64(student.photoUrl) : '';
+
+  var logoTag = logoB64
+    ? '<img src="' + logoB64 + '" style="width:45px;height:45px;object-fit:contain;display:block;">'
+    : '<div style="width:45px;height:45px;background:#f0a500;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px;">AA</div>';
+
+  var photoTag = photoB64
+    ? '<img src="' + photoB64 + '" style="width:80px;height:96px;object-fit:cover;border-radius:6px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">'
+    : '<div style="width:80px;height:96px;background:#e8edf2;border-radius:6px;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:32px;color:#aab;">&#128100;</div>';
+
+  var watermarkTag = logoB64
+    ? '<img src="' + logoB64 + '" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:140px;height:140px;object-fit:contain;opacity:0.08;pointer-events:none;">'
+    : '';
+
+  var name     = student.fullName        || '';
+  var admNo    = student.admissionNumber || 'N/A';
+  var cls      = student.className || student.class || '';
+  var gender   = student.gender          || '';
+  var dob      = student.dateOfBirth ? formatDate(student.dateOfBirth) : '';
+  var section  = (student.section === 'primary') ? 'Primary' : 'High School';
+
+  // Card dimensions: CR80 landscape ≈ 85.6mm × 53.98mm → scale to ≈ 323px × 204px at 96dpi
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+    '<style>' +
+    'body{margin:0;padding:20px;background:#f0f0f0;font-family:Arial,sans-serif;}' +
+    '.card{width:323px;border-radius:10px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.3);margin:0 auto 30px;background:#fff;page-break-inside:avoid;}' +
+    '.card-front .header{background:linear-gradient(135deg,#0d1b2a 0%,#1a3558 100%);padding:10px 12px;display:flex;align-items:center;gap:10px;}' +
+    '.card-front .header-text{flex:1;text-align:center;}' +
+    '.card-front .school-name{color:#f0a500;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;line-height:1.2;margin:0;}' +
+    '.card-front .school-motto{color:rgba(255,255,255,0.65);font-size:7px;font-style:italic;margin:2px 0 0;}' +
+    '.card-front .card-label{color:rgba(255,255,255,0.5);font-size:7px;letter-spacing:1px;text-transform:uppercase;margin:3px 0 0;}' +
+    '.card-front .body{display:flex;gap:12px;padding:12px;align-items:flex-start;}' +
+    '.card-front .photo-col{flex-shrink:0;}' +
+    '.card-front .info-col{flex:1;min-width:0;}' +
+    '.card-front .student-name{font-size:11px;font-weight:700;color:#0d1b2a;text-transform:uppercase;letter-spacing:.3px;margin:0 0 6px;line-height:1.3;}' +
+    '.card-front .info-row{display:flex;gap:4px;margin-bottom:3px;font-size:8.5px;line-height:1.3;}' +
+    '.card-front .info-label{color:#888;flex-shrink:0;width:58px;}' +
+    '.card-front .info-val{color:#0d1b2a;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+    '.card-front .footer{background:linear-gradient(90deg,#0d1b2a,#1a3558);padding:5px 12px;display:flex;align-items:center;justify-content:space-between;}' +
+    '.card-front .footer-text{color:#f0a500;font-size:7.5px;font-weight:700;letter-spacing:.3px;}' +
+    '.card-front .footer-session{color:rgba(255,255,255,0.55);font-size:7px;}' +
+    '.card-back{position:relative;background:linear-gradient(160deg,#f8f9fb 0%,#eef0f4 100%);}' +
+    '.card-back .back-header{background:linear-gradient(135deg,#0d1b2a,#1a3558);padding:8px 12px;text-align:center;}' +
+    '.card-back .back-title{color:#f0a500;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:0;}' +
+    '.card-back .back-body{padding:10px 14px;position:relative;}' +
+    '.card-back .terms-title{font-size:8px;font-weight:700;color:#0d1b2a;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;}' +
+    '.card-back .term-item{font-size:7.5px;color:#444;margin-bottom:3px;line-height:1.4;padding-left:10px;position:relative;}' +
+    '.card-back .term-item::before{content:"•";position:absolute;left:0;color:#f0a500;font-weight:700;}' +
+    '.card-back .contact-box{border:1px solid #dde2ea;border-radius:5px;padding:6px 8px;margin:8px 0;background:rgba(255,255,255,0.7);backdrop-filter:blur(4px);}' +
+    '.card-back .contact-title{font-size:7px;font-weight:700;color:#0d1b2a;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;}' +
+    '.card-back .contact-row{font-size:7.5px;color:#444;margin-bottom:2px;}' +
+    '.card-back .contact-row span{font-weight:600;color:#0d1b2a;}' +
+    '.card-back .adm-strip{background:#0d1b2a;color:#f0a500;font-family:monospace;font-size:9px;font-weight:700;letter-spacing:3px;text-align:center;padding:5px;margin-top:6px;border-radius:0 0 10px 10px;}' +
+    '.page-break{page-break-after:always;}' +
+    '</style></head><body>';
+
+  // === FRONT OF CARD ===
+  html += '<div class="card card-front">';
+  // Header
+  html += '<div class="header">';
+  html += '<div>' + logoTag + '</div>';
+  html += '<div class="header-text">';
+  html += '<p class="school-name">' + schoolName + '</p>';
+  if (schoolMotto) html += '<p class="school-motto">' + schoolMotto + '</p>';
+  html += '<p class="card-label">Student Identity Card</p>';
+  html += '</div>';
+  html += '<div style="width:45px;"></div>'; // Spacer to balance logo
+  html += '</div>';
+  // Body
+  html += '<div class="body">';
+  html += '<div class="photo-col">' + photoTag + '</div>';
+  html += '<div class="info-col">';
+  html += '<p class="student-name">' + name + '</p>';
+  html += '<div class="info-row"><span class="info-label">Adm. No:</span><span class="info-val">' + admNo + '</span></div>';
+  html += '<div class="info-row"><span class="info-label">Class:</span><span class="info-val">' + cls + '</span></div>';
+  html += '<div class="info-row"><span class="info-label">Section:</span><span class="info-val">' + section + '</span></div>';
+  if (gender) html += '<div class="info-row"><span class="info-label">Gender:</span><span class="info-val">' + gender + '</span></div>';
+  if (dob)    html += '<div class="info-row"><span class="info-label">Date of Birth:</span><span class="info-val">' + dob + '</span></div>';
+  html += '</div>';
+  html += '</div>';
+  // Footer
+  html += '<div class="footer">';
+  html += '<span class="footer-text">&#9673; Valid: ' + session + '</span>';
+  html += '<span class="footer-session">Academic Session</span>';
+  html += '</div>';
+  html += '</div>'; // end card-front
+
+  // Page break between front and back
+  html += '<div class="page-break"></div>';
+
+  // === BACK OF CARD ===
+  html += '<div class="card card-back">';
+  html += '<div class="back-header"><p class="back-title">' + schoolName + '</p></div>';
+  html += '<div class="back-body">';
+  html += watermarkTag;
+  html += '<p class="terms-title">Terms &amp; Conditions</p>';
+  html += '<div class="term-item">This card must be worn at all times within the school premises.</div>';
+  html += '<div class="term-item">This card is non-transferable and must not be defaced.</div>';
+  html += '<div class="term-item">Loss of card must be reported to the school office immediately.</div>';
+  html += '<div class="term-item">If found, please return to the school office.</div>';
+
+  if (schoolAddress || schoolPhone || schoolEmail) {
+    html += '<div class="contact-box">';
+    html += '<p class="contact-title">School Contact</p>';
+    if (schoolAddress) html += '<div class="contact-row"><span>&#128205; </span>' + schoolAddress + '</div>';
+    if (schoolPhone)   html += '<div class="contact-row"><span>&#128222; </span>' + schoolPhone + '</div>';
+    if (schoolEmail)   html += '<div class="contact-row"><span>&#9993; </span>' + schoolEmail + '</div>';
+    html += '</div>';
+  }
+
+  html += '</div>'; // end back-body
+  html += '<div class="adm-strip">&#9646;&#9646;&#9646; ' + admNo + ' &#9646;&#9646;&#9646;</div>';
+  html += '</div>'; // end card-back
+
+  html += '</body></html>';
+
+  var blob = Utilities.newBlob(html, MimeType.HTML).getAs(MimeType.PDF)
+    .setName('IDCard_' + name.replace(/\s+/g, '_') + '_' + admNo + '.pdf');
+  var folder = getOrCreateFolder(schoolName + ' - ID Cards');
+  var file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return {
+    success: true,
+    pdfUrl: file.getUrl(),
+    downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId(),
+    previewUrl: 'https://drive.google.com/file/d/' + file.getId() + '/preview'
+  };
+}

@@ -273,7 +273,8 @@
           { key:'status', render: function(r){ return formatStatus(r.status); } }
         ], filtered, function(r) {
           var id = r.id || r.iD;
-          return '<button class="aa-btn aa-btn-gold aa-btn-xs" onclick="viewReport(\''+id+'\')"><i class="fa fa-eye"></i> View Report</button>';
+          return '<button class="aa-btn aa-btn-gold aa-btn-xs" onclick="viewReport(\''+id+'\')" title="View Report"><i class="fa fa-eye"></i> View Report</button> ' +
+                 '<button class="aa-btn aa-btn-info aa-btn-xs" onclick="generateIDCard(\''+id+'\')" title="Generate ID Card"><i class="fa fa-id-card"></i> ID Card</button>';
         });
       }, null, true);
     }
@@ -282,6 +283,14 @@
       var rptType = confirm('Generate a Half-Term report instead of Full-Term?\n\nOK = Half-Term\nCancel = Full-Term') ? 'Half Term' : 'Full Term';
       callServer('principalGetStudentResultPDF', [AA.token, sid, currentTerm, currentSession, rptType], function(res) {
         if(res.success) openPDFViewer(res.previewUrl, res.downloadUrl, 'Report Card');
+        else showToast(res.message, 'error');
+      }, null, true);
+    }
+
+    function generateIDCard(studentId) {
+      showToast('Generating ID Card, please wait...', 'info');
+      callServer('principalGenerateIDCard', [AA.token, studentId], function(res) {
+        if (res.success) openPDFViewer(res.previewUrl, res.downloadUrl, 'Student ID Card');
         else showToast(res.message, 'error');
       }, null, true);
     }

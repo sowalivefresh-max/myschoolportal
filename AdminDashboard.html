@@ -1302,10 +1302,20 @@
           var id = r.id || r.iD;
           return '<button class="aa-btn aa-btn-outline aa-btn-xs" title="Edit" onclick="editStudent(\''+id+'\')"><i class="fa fa-edit"></i></button> ' +
                  '<button class="aa-btn aa-btn-success aa-btn-xs" title="Subjects" onclick="manageEnrollment(\''+id+'\', \''+r.fullName+'\')"><i class="fa fa-book"></i></button> ' +
+                 '<button class="aa-btn aa-btn-info aa-btn-xs" title="Generate ID Card" onclick="generateIDCard(\''+id+'\')"><i class="fa fa-id-card"></i></button> ' +
                  '<button class="aa-btn aa-btn-danger aa-btn-xs" title="Delete" onclick="deleteStudent(\''+id+'\')"><i class="fa fa-trash"></i></button>';
         });
       }, null, true);
     }
+
+    function generateIDCard(studentId) {
+      showToast('Generating ID Card, please wait...', 'info');
+      callServer('adminGenerateIDCard', [AA.token, studentId], function(res) {
+        if (res.success) openPDFViewer(res.previewUrl, res.downloadUrl, 'Student ID Card');
+        else showToast(res.message, 'error');
+      }, null, true);
+    }
+
     function previewStudentPhoto(input) {
       if (input.files && input.files[0]) {
         resizeAndCompressImage(input.files[0], 200, 0.75, function(base64) {
