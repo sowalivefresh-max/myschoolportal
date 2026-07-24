@@ -444,8 +444,8 @@ function generateStudentIDCardPDF(studentId) {
   var photoB64 = student.photoUrl ? imageToBase64(student.photoUrl) : '';
 
   var logoTag = logoB64
-    ? '<img src="' + logoB64 + '" style="width:45px;height:45px;object-fit:contain;display:block;">'
-    : '<div style="width:45px;height:45px;background:#f0a500;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px;">AA</div>';
+    ? '<img src="' + logoB64 + '" style="width:100%;height:100%;object-fit:cover;border-radius:7px;display:block;">'
+    : '<div style="width:100%;height:100%;background:#f0a500;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px;">AA</div>';
 
   var photoTag = photoB64
     ? '<img src="' + photoB64 + '" style="width:80px;height:96px;object-fit:cover;border-radius:6px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">'
