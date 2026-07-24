@@ -463,6 +463,7 @@ function generateStudentIDCardPDF(studentId) {
   var section  = (student.section === 'primary') ? 'Primary' : 'High School';
 
   // Card dimensions: CR80 landscape ≈ 85.6mm × 53.98mm → scale to ≈ 323px × 204px at 96dpi
+  var watermarkBase64 = Utilities.base64Encode('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" font-family="Arial" font-size="12" fill="#000" opacity="0.05" text-anchor="middle" transform="rotate(-45 50 50)">' + schoolName + '</text></svg>');
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
     '<style>' +
     'body{margin:0;padding:40px;background:#d9dde4;font-family:Arial,sans-serif;}' +
@@ -470,27 +471,25 @@ function generateStudentIDCardPDF(studentId) {
     '.card{width:323px;height:204px;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.35);background:#fff;page-break-inside:avoid;box-sizing:border-box;display:flex;flex-direction:column;}' +
 
     /* ---- FRONT: Header ---- */
-    '.card-front .header{position:relative;background:linear-gradient(135deg,#0a1628 0%,#112240 50%,#1a3a6e 100%);padding:11px 12px;overflow:hidden;flex-shrink:0;}' +
+    '.card-front .header{position:relative;background:linear-gradient(135deg,#ffffff 0%,#f4f6f9 100%);padding:11px 12px 14px;overflow:hidden;flex-shrink:0;}' +
     /* decorative circles */
-    '.card-front .hdr-circle-1{position:absolute;top:-18px;right:-18px;width:70px;height:70px;border-radius:50%;background:rgba(240,165,0,0.18);pointer-events:none;}' +
+    '.card-front .hdr-circle-1{position:absolute;top:-18px;right:-18px;width:70px;height:70px;border-radius:50%;background:rgba(13,27,42,0.05);pointer-events:none;}' +
     '.card-front .hdr-circle-2{position:absolute;top:-8px;right:18px;width:38px;height:38px;border-radius:50%;background:rgba(240,165,0,0.1);pointer-events:none;}' +
-    '.card-front .hdr-circle-3{position:absolute;bottom:-20px;left:40px;width:55px;height:55px;border-radius:50%;background:rgba(255,255,255,0.04);pointer-events:none;}' +
+    '.card-front .hdr-circle-3{position:absolute;bottom:-20px;left:40px;width:55px;height:55px;border-radius:50%;background:rgba(13,27,42,0.03);pointer-events:none;}' +
     /* diagonal slash accent */
-    '.card-front .hdr-slash{position:absolute;top:0;right:55px;width:3px;height:100%;background:linear-gradient(to bottom,transparent,rgba(240,165,0,0.6),transparent);transform:skewX(-15deg);pointer-events:none;}' +
+    '.card-front .hdr-slash{position:absolute;top:0;right:55px;width:3px;height:100%;background:linear-gradient(to bottom,transparent,rgba(13,27,42,0.2),transparent);transform:skewX(-15deg);pointer-events:none;}' +
     '.card-front .hdr-inner{display:flex;align-items:center;gap:10px;position:relative;z-index:1;}' +
-    '.card-front .hdr-logo-wrap{flex-shrink:0;width:46px;height:46px;background:rgba(255,255,255,0.1);border-radius:8px;border:1px solid rgba(240,165,0,0.35);display:flex;align-items:center;justify-content:center;}' +
+    '.card-front .hdr-logo-wrap{flex-shrink:0;width:46px;height:46px;background:#fff;border-radius:8px;border:1px solid rgba(13,27,42,0.15);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.05);}' +
     '.card-front .hdr-text{flex:1;text-align:center;}' +
-    '.card-front .school-name{color:#f0a500;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;line-height:1.25;margin:0;}' +
-    '.card-front .school-motto{color:rgba(255,255,255,0.6);font-size:6.5px;font-style:italic;margin:2px 0 0;}' +
-    '.card-front .card-type-wrap{margin-top:4px;display:inline-block;background:rgba(240,165,0,0.2);border:1px solid rgba(240,165,0,0.5);border-radius:20px;padding:1px 7px;}' +
-    '.card-front .card-label{color:#f0a500;font-size:6px;letter-spacing:1.5px;text-transform:uppercase;}' +
+    '.card-front .school-name{color:#0d1b2a;font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;line-height:1.25;margin:0;}' +
+    '.card-front .school-motto{color:#555;font-size:6.5px;font-style:italic;margin:2px 0 0;}' +
+    '.card-front .card-type-wrap{margin-top:4px;display:inline-block;background:#0d1b2a;border-radius:20px;padding:2px 7px;}' +
+    '.card-front .card-label{color:#f0a500;font-size:6px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}' +
     /* gold rule below header */
     '.card-front .gold-rule{height:3px;background:linear-gradient(90deg,#c07d00,#f0a500,#c07d00);flex-shrink:0;}' +
 
     /* ---- FRONT: Body ---- */
-    '.card-front .body{flex:1;display:flex;align-items:stretch;position:relative;background:#fff;}' +
-    /* dot-grid overlay */
-    '.card-front .body-bg{position:absolute;inset:0;background-image:radial-gradient(circle,#c8d0dc 1px,transparent 1px);background-size:10px 10px;opacity:0.35;pointer-events:none;}' +
+    '.card-front .body{flex:1;display:flex;align-items:stretch;position:relative;background:#fff;background-image:url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'60\'><text x=\'50%\' y=\'50%\' font-family=\'Arial\' font-size=\'9\' font-weight=\'bold\' fill=\'%23f0a500\' opacity=\'0.15\' text-anchor=\'middle\' transform=\'rotate(-30 60 30)\'>' + encodeURIComponent(schoolName) + '</text></svg>");}' +
     /* left gold accent stripe */
     '.card-front .photo-stripe{flex-shrink:0;width:96px;background:linear-gradient(180deg,#0d1b2a 0%,#1a3558 100%);display:flex;align-items:center;justify-content:center;padding:10px 8px;position:relative;}' +
     '.card-front .photo-stripe::after{content:"";position:absolute;right:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#f0a500,#c07d00);}' +
@@ -557,7 +556,6 @@ function generateStudentIDCardPDF(studentId) {
 
   // --- Body ---
   html += '<div class="body">';
-  html += '<div class="body-bg"></div>';
 
   // Left photo stripe
   html += '<div class="photo-stripe">';
