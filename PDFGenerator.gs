@@ -463,7 +463,9 @@ function generateStudentIDCardPDF(studentId) {
   var section  = (student.section === 'primary') ? 'Primary' : 'High School';
 
   // Card dimensions: CR80 landscape ≈ 85.6mm × 53.98mm → scale to ≈ 323px × 204px at 96dpi
-  var watermarkBase64 = Utilities.base64Encode('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" font-family="Arial" font-size="12" fill="#000" opacity="0.05" text-anchor="middle" transform="rotate(-45 50 50)">' + schoolName + '</text></svg>');
+  var bgSvgStr = '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60"><text x="50%" y="50%" font-family="Arial" font-size="9" font-weight="bold" fill="#f0a500" fill-opacity="0.25" text-anchor="middle" transform="rotate(-30 60 30)">' + schoolName + '</text></svg>';
+  var bgSvgB64 = Utilities.base64Encode(bgSvgStr);
+  
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
     '<style>' +
     'body{margin:0;padding:40px;background:#d9dde4;font-family:Arial,sans-serif;}' +
@@ -489,7 +491,8 @@ function generateStudentIDCardPDF(studentId) {
     '.card-front .gold-rule{height:3px;background:linear-gradient(90deg,#c07d00,#f0a500,#c07d00);flex-shrink:0;}' +
 
     /* ---- FRONT: Body ---- */
-    '.card-front .body{flex:1;display:flex;align-items:stretch;position:relative;background:#fff;background-image:url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'60\'><text x=\'50%\' y=\'50%\' font-family=\'Arial\' font-size=\'9\' font-weight=\'bold\' fill=\'%23f0a500\' opacity=\'0.15\' text-anchor=\'middle\' transform=\'rotate(-30 60 30)\'>' + encodeURIComponent(schoolName) + '</text></svg>");}' +
+    '.card-front .body{flex:1;display:flex;align-items:stretch;position:relative;background:#fff;background-image:url("data:image/svg+xml;base64,' + bgSvgB64 + '");}' +
+
     /* left gold accent stripe */
     '.card-front .photo-stripe{flex-shrink:0;width:96px;background:linear-gradient(180deg,#0d1b2a 0%,#1a3558 100%);display:flex;align-items:center;justify-content:center;padding:10px 8px;position:relative;}' +
     '.card-front .photo-stripe::after{content:"";position:absolute;right:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#f0a500,#c07d00);}' +
