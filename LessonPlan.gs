@@ -1,159 +1,132 @@
-/**
- * ABECEDARIAN ACADEMY - LessonPlan.gs
- * Lesson plan creation, submission, and approval workflow.
+﻿/**
+ * MYSCHOOL PORTAL - LessonPlan.gs
+ * Lesson plan creation, submission, and approval via Firestore.
  */
 
 function createLessonPlan(teacherId, data) {
   if (!data.subjectId || !data.topic || !data.className)
     return { success: false, message: 'Subject, class, and topic required.' };
-  var sheet = getSpreadsheet().getSheetByName('LessonPlans');
   var id = generateId();
-  sheet.appendRow([id, teacherId, data.subjectId, data.className,
-    data.topic || '', data.objectives || '', data.teachingAids || '',
-    data.entryBehaviour || '', data.presentationSteps || '',
-    data.evaluation || '', data.assignment || '',
-    data.week || '', data.term || '', data.session || '',
-    'draft', '', '', new Date().toISOString(), data.referenceBook || '']);
+  firebaseSet('lessonPlans', id, {
+    id: id, teacherId: teacherId, subjectId: data.subjectId, className: data.className,
+    topic: data.topic || '', objectives: data.objectives || '', teachingAids: data.teachingAids || '',
+    entryBehaviour: data.entryBehaviour || '', presentationSteps: data.presentationSteps || '',
+    evaluation: data.evaluation || '', assignment: data.assignment || '',
+    week: data.week || '', term: data.term || '', session: data.session || '',
+    status: 'draft', approverId: '', approverNote: '',
+    createdAt: new Date().toISOString(), referenceBook: data.referenceBook || ''
+  });
   logAudit(teacherId, 'CREATE_LESSON_PLAN', 'Topic: ' + data.topic);
   return { success: true, id: id, message: 'Lesson plan saved as draft.' };
 }
 
 function updateLessonPlan(teacherId, planId, data) {
-  var sheet = getSpreadsheet().getSheetByName('LessonPlans');
-  var row = findRowById(sheet, planId);
-  if (row === -1) return { success: false, message: 'Not found.' };
-  var v = sheet.getRange(row, 1, 1, 18).getValues()[0];
-  if (String(v[1]) !== String(teacherId)) return { success: false, message: 'Cannot edit another teacher\'s plan.' };
-  var status = String(v[14]).toLowerCase();
+  var plan = firebaseGet('lessonPlans', planId);
+  if (!plan) return { success: false, message: 'Not found.' };
+  if (String(plan.teacherId) !== String(teacherId)) return { success: false, message: 'Cannot edit another teacher\'s plan.' };
+  var status = String(plan.status || '').toLowerCase();
   if (status !== 'draft' && status !== 'rejected') return { success: false, message: 'Only draft/rejected plans can be edited.' };
-  if (data.topic !== undefined) sheet.getRange(row, 5).setValue(data.topic);
-  if (data.objectives !== undefined) sheet.getRange(row, 6).setValue(data.objectives);
-  if (data.teachingAids !== undefined) sheet.getRange(row, 7).setValue(data.teachingAids);
-  if (data.entryBehaviour !== undefined) sheet.getRange(row, 8).setValue(data.entryBehaviour);
-  if (data.presentationSteps !== undefined) sheet.getRange(row, 9).setValue(data.presentationSteps);
-  if (data.evaluation !== undefined) sheet.getRange(row, 10).setValue(data.evaluation);
-  if (data.assignment !== undefined) sheet.getRange(row, 11).setValue(data.assignment);
-  if (data.week !== undefined) sheet.getRange(row, 12).setValue(data.week);
-  if (data.referenceBook !== undefined) sheet.getRange(row, 19).setValue(data.referenceBook);
-  sheet.getRange(row, 15).setValue('draft');
+  var updates = { status: 'draft' };
+  if (data.topic              !== undefined) updates.topic              = data.topic;
+  if (data.objectives         !== undefined) updates.objectives         = data.objectives;
+  if (data.teachingAids       !== undefined) updates.teachingAids       = data.teachingAids;
+  if (data.entryBehaviour     !== undefined) updates.entryBehaviour     = data.entryBehaviour;
+  if (data.presentationSteps  !== undefined) updates.presentationSteps  = data.presentationSteps;
+  if (data.evaluation         !== undefined) updates.evaluation         = data.evaluation;
+  if (data.assignment         !== undefined) updates.assignment         = data.assignment;
+  if (data.week               !== undefined) updates.week               = data.week;
+  if (data.referenceBook      !== undefined) updates.referenceBook      = data.referenceBook;
+  firebasePatch('lessonPlans', planId, updates);
   return { success: true, message: 'Lesson plan updated.' };
 }
 
 function submitLessonPlan(teacherId, planId) {
-  var sheet = getSpreadsheet().getSheetByName('LessonPlans');
-  var row = findRowById(sheet, planId);
-  if (row === -1) return { success: false, message: 'Not found.' };
-  var v = sheet.getRange(row, 1, 1, 18).getValues()[0];
-  if (String(v[1]) !== String(teacherId)) return { success: false, message: 'Cannot submit another teacher\'s plan.' };
-  sheet.getRange(row, 15).setValue('submitted');
+  var plan = firebaseGet('lessonPlans', planId);
+  if (!plan) return { success: false, message: 'Not found.' };
+  if (String(plan.teacherId) !== String(teacherId)) return { success: false, message: 'Cannot submit another teacher\'s plan.' };
+  firebasePatch('lessonPlans', planId, { status: 'submitted' });
   logAudit(teacherId, 'SUBMIT_LESSON_PLAN', 'Plan ID: ' + planId);
   return { success: true, message: 'Submitted for review.' };
 }
 
 function approveLessonPlan(approverId, planId, note) {
-  var sheet = getSpreadsheet().getSheetByName('LessonPlans');
-  var row = findRowById(sheet, planId);
-  if (row === -1) return { success: false, message: 'Not found.' };
-  sheet.getRange(row, 15).setValue('approved');
-  sheet.getRange(row, 16).setValue(approverId);
-  sheet.getRange(row, 17).setValue(note || 'Approved');
+  if (!firebaseExists('lessonPlans', planId)) return { success: false, message: 'Not found.' };
+  firebasePatch('lessonPlans', planId, { status: 'approved', approverId: approverId, approverNote: note || 'Approved' });
   logAudit(approverId, 'APPROVE_LESSON_PLAN', 'Plan ID: ' + planId);
   return { success: true, message: 'Lesson plan approved.' };
 }
 
 function rejectLessonPlan(approverId, planId, note) {
-  var sheet = getSpreadsheet().getSheetByName('LessonPlans');
-  var row = findRowById(sheet, planId);
-  if (row === -1) return { success: false, message: 'Not found.' };
-  sheet.getRange(row, 15).setValue('rejected');
-  sheet.getRange(row, 16).setValue(approverId);
-  sheet.getRange(row, 17).setValue(note || 'Needs revision');
+  if (!firebaseExists('lessonPlans', planId)) return { success: false, message: 'Not found.' };
+  firebasePatch('lessonPlans', planId, { status: 'rejected', approverId: approverId, approverNote: note || 'Needs revision' });
   logAudit(approverId, 'REJECT_LESSON_PLAN', 'Plan ID: ' + planId);
   return { success: true, message: 'Plan returned for revision.' };
 }
 
 function deleteLessonPlan(teacherId, planId) {
-  var sheet = getSpreadsheet().getSheetByName('LessonPlans');
-  var row = findRowById(sheet, planId);
-  if (row === -1) return { success: false, message: 'Not found.' };
-  var v = sheet.getRange(row, 1, 1, 18).getValues()[0];
-  if (String(v[1]) !== String(teacherId)) return { success: false, message: 'Cannot delete another teacher\'s plan.' };
-  if (String(v[14]).toLowerCase() !== 'draft') return { success: false, message: 'Only drafts can be deleted.' };
-  sheet.deleteRow(row);
+  var plan = firebaseGet('lessonPlans', planId);
+  if (!plan) return { success: false, message: 'Not found.' };
+  if (String(plan.teacherId) !== String(teacherId)) return { success: false, message: 'Cannot delete another teacher\'s plan.' };
+  if (String(plan.status || '').toLowerCase() !== 'draft') return { success: false, message: 'Only drafts can be deleted.' };
+  firebaseDelete('lessonPlans', planId);
   return { success: true, message: 'Deleted.' };
 }
 
 function getTeacherLessonPlans(teacherId, term, session) {
-  var plans = getSheetData('LessonPlans').filter(function(p) {
-    var match = String(p.teacherID || p.teacherId) === String(teacherId);
-    if (term) match = match && String(p.term) === String(term);
-    if (session) match = match && String(p.session) === String(session);
-    return match;
-  });
+  var plans = firebaseQuery('lessonPlans', [{ field: 'teacherId', op: 'EQUAL', value: String(teacherId) }]);
+  if (term)    plans = plans.filter(function(p) { return String(p.term)    === String(term); });
+  if (session) plans = plans.filter(function(p) { return String(p.session) === String(session); });
   var subjects = getAllSubjects();
   return plans.map(function(p) {
-    var sid = p.subjectID || p.subjectId;
-    var subj = subjects.find(function(s) { return String(s.iD || s.id) === String(sid); });
-    p.subjectName = subj ? subj.subjectName : sid;
+    var subj = subjects.find(function(s) { return String(s.id) === String(p.subjectId); });
+    p.subjectName = subj ? subj.subjectName : p.subjectId;
     return p;
   });
 }
 
 function getPendingLessonPlans(term, session, section) {
-  var plans = getSheetData('LessonPlans').filter(function(p) {
-    var match = String(p.status || '').toLowerCase() === 'submitted';
-    if (term) match = match && String(p.term) === String(term);
-    if (session) match = match && String(p.session) === String(session);
-    return match;
-  });
-  var users = getAllUsers(); var subjects = getAllSubjects(); var classes = getAllClasses();
-  var result = [];
-  
-  plans.forEach(function(p) {
-    var tid = p.teacherID || p.teacherId;
-    var teacher = users.find(function(u) { return String(u.iD || u.id) === String(tid); });
-    
-    // Filter by section
+  var plans = firebaseQuery('lessonPlans', [{ field: 'status', op: 'EQUAL', value: 'submitted' }]);
+  if (term)    plans = plans.filter(function(p) { return String(p.term)    === String(term); });
+  if (session) plans = plans.filter(function(p) { return String(p.session) === String(session); });
+  var users = getAllUsers(), subjects = getAllSubjects(), classes = getAllClasses();
+  return plans.map(function(p) {
+    var teacher = users.find(function(u) { return String(u.id) === String(p.teacherId); });
     if (section && section !== 'both') {
-      var cls = classes.find(function(c) { return String(c.className) === String(p.class || p.className); });
-      var planSection = cls ? cls.section : (teacher ? teacher.section : 'both');
-      if (planSection !== section && planSection !== 'both') return;
+      var cls = classes.find(function(c) { return String(c.className) === String(p.className); });
+      var sec = cls ? cls.section : (teacher ? teacher.section : 'both');
+      if (sec !== section && sec !== 'both') return null;
     }
-    
-    var sid = p.subjectID || p.subjectId;
-    var subj = subjects.find(function(s) { return String(s.iD || s.id) === String(sid); });
-    p.teacherName = teacher ? teacher.fullName : tid;
-    p.subjectName = subj ? subj.subjectName : sid;
-    result.push(p);
-  });
-  return result;
+    var subj = subjects.find(function(s) { return String(s.id) === String(p.subjectId); });
+    p.teacherName = teacher ? teacher.fullName : p.teacherId;
+    p.subjectName = subj   ? subj.subjectName  : p.subjectId;
+    return p;
+  }).filter(Boolean);
 }
 
 function getAllLessonPlans(term, session) {
-  var plans = getSheetData('LessonPlans');
-  if (term) plans = plans.filter(function(p) { return String(p.term) === String(term); });
+  var plans = firebaseGetAll('lessonPlans');
+  if (term)    plans = plans.filter(function(p) { return String(p.term)    === String(term); });
   if (session) plans = plans.filter(function(p) { return String(p.session) === String(session); });
-  var users = getAllUsers(); var subjects = getAllSubjects();
+  var users = getAllUsers(), subjects = getAllSubjects();
   return plans.map(function(p) {
-    var tid = p.teacherID || p.teacherId; var sid = p.subjectID || p.subjectId;
-    var teacher = users.find(function(u) { return String(u.iD || u.id) === String(tid); });
-    var subj = subjects.find(function(s) { return String(s.iD || s.id) === String(sid); });
-    p.teacherName = teacher ? teacher.fullName : tid;
-    p.subjectName = subj ? subj.subjectName : sid;
+    var teacher = users.find(function(u) { return String(u.id) === String(p.teacherId); });
+    var subj    = subjects.find(function(s) { return String(s.id) === String(p.subjectId); });
+    p.teacherName = teacher ? teacher.fullName : p.teacherId;
+    p.subjectName = subj   ? subj.subjectName  : p.subjectId;
     return p;
   });
 }
 
 function getTeacherComplianceReport(term, session) {
   var teachers = getAllUsers().filter(function(u) { return u.role === 'teacher' || u.role === 'primary_teacher'; });
-  var plans = getSheetData('LessonPlans');
-  if (term) plans = plans.filter(function(p) { return String(p.term) === String(term); });
+  var plans    = firebaseGetAll('lessonPlans');
+  if (term)    plans = plans.filter(function(p) { return String(p.term)    === String(term); });
   if (session) plans = plans.filter(function(p) { return String(p.session) === String(session); });
   return teachers.map(function(t) {
-    var tid = t.iD || t.id;
-    var tp = plans.filter(function(p) { return String(p.teacherID || p.teacherId) === String(tid); });
+    var tid = t.id;
+    var tp  = plans.filter(function(p) { return String(p.teacherId) === String(tid); });
     var submitted = tp.filter(function(p) { return ['submitted','approved'].indexOf(String(p.status||'').toLowerCase()) !== -1; }).length;
-    return { teacherId: tid, teacherName: t.fullName, section: t.section, total: tp.length, submitted: submitted,
-      compliance: tp.length > 0 ? Math.round((submitted/tp.length)*100) : 0 };
+    return { teacherId: tid, teacherName: t.fullName, section: t.section,
+      total: tp.length, submitted: submitted, compliance: tp.length > 0 ? Math.round((submitted/tp.length)*100) : 0 };
   });
 }

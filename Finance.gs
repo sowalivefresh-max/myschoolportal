@@ -1,117 +1,61 @@
-/**
- * ABECEDARIAN ACADEMY - Finance.gs
- * Fee structure, bill generation, payment tracking, expenses, receipts.
+﻿/**
+ * MYSCHOOL PORTAL - Finance.gs
+ * Fee structures, bill generation, payment tracking,
+ * expenses, receipts - all via Firebase Firestore.
  */
 
-// --- FEE STRUCTURE ------------------------------------------
+// --- FEE STRUCTURE -------------------------------------------
 
-function getAllFeeStructures() { return getSheetData('FeeStructure'); }
+function getAllFeeStructures() { return firebaseGetAll('feeStructure'); }
 
 function saveFeeStructure(data) {
   if (!data.className || !data.term || !data.session)
     return { success: false, message: 'Class, term, and session required.' };
 
-  var sheet = getSpreadsheet().getSheetByName('FeeStructure');
-
-  // Ensure column 11 (LineItems) header exists
-  if (sheet.getMaxColumns() < 11) {
-    sheet.insertColumnsAfter(sheet.getMaxColumns(), 11 - sheet.getMaxColumns());
-  }
-  if (!sheet.getRange(1, 11).getValue()) {
-    sheet.getRange(1, 11).setValue('LineItems');
-  }
-  var all = getSheetData('FeeStructure');
-
-  // Parse line items if provided as JSON string
   var lineItems = [];
   if (data.lineItems) {
-    try {
-      lineItems = typeof data.lineItems === 'string' ? JSON.parse(data.lineItems) : data.lineItems;
-    } catch(e) { lineItems = []; }
+    try { lineItems = typeof data.lineItems === 'string' ? JSON.parse(data.lineItems) : data.lineItems; }
+    catch(e) { lineItems = []; }
   }
+  var total = lineItems.length > 0
+    ? lineItems.reduce(function(s,i) { return s + safeFloat(i.amount,0); }, 0)
+    : safeFloat(data.tuitionFee,0) + safeFloat(data.developmentLevy,0) + safeFloat(data.examFee,0) + safeFloat(data.sportsFee,0);
 
-  // Compute total from line items, or fall back to legacy fields
-  var total = 0;
-  if (lineItems.length > 0) {
-    lineItems.forEach(function(item) { total += safeFloat(item.amount, 0); });
-  } else {
-    total = safeFloat(data.tuitionFee, 0) + safeFloat(data.developmentLevy, 0) +
-            safeFloat(data.examFee, 0) + safeFloat(data.sportsFee, 0);
-  }
-
-  var lineItemsStr = JSON.stringify(lineItems);
   var section = data.section || '';
+  var all = getAllFeeStructures();
 
-  // Check if updating an existing record by ID
+  // Update by ID if provided
   if (data.id) {
-    var row = findRowById(sheet, data.id);
-    if (row > 0) {
-      sheet.getRange(row, 2).setValue(data.className.trim());
-      sheet.getRange(row, 3).setValue(section);
-      sheet.getRange(row, 10).setValue(total);
-      // Store lineItems in a new column 11 if it exists, extend if needed
-      if (sheet.getMaxColumns() < 11) sheet.insertColumnsAfter(sheet.getMaxColumns(), 11 - sheet.getMaxColumns());
-      sheet.getRange(row, 11).setValue(lineItemsStr);
-      return { success: true, message: 'Fee structure updated. Total: ' + formatNaira(total) };
-    }
+    firebasePatch('feeStructure', data.id, { className: data.className.trim(), section: section, totalAmount: total, lineItems: lineItems });
+    return { success: true, message: 'Fee structure updated. Total: ' + formatNaira(total) };
   }
 
-  // Split class name by comma to handle multiple classes
   var classes = data.className.split(',').map(function(c) { return c.trim(); }).filter(Boolean);
-  if (classes.length === 0) {
-    return { success: false, message: 'Valid class name(s) required.' };
-  }
-
-  var savedClasses = [];
-
-  for (var i = 0; i < classes.length; i++) {
-    var cls = classes[i];
-    // Check for existing by class+term+session
+  var saved = [];
+  classes.forEach(function(cls) {
     var existing = all.find(function(f) {
       return String(f.className).toLowerCase() === cls.toLowerCase() &&
              String(f.term) === String(data.term) && String(f.session) === String(data.session);
     });
-
     if (existing) {
-      var row2 = findRowById(sheet, existing.iD || existing.id);
-      if (row2 > 0) {
-        sheet.getRange(row2, 3).setValue(section);
-        sheet.getRange(row2, 10).setValue(total);
-        if (sheet.getMaxColumns() < 11) sheet.insertColumnsAfter(sheet.getMaxColumns(), 11 - sheet.getMaxColumns());
-        sheet.getRange(row2, 11).setValue(lineItemsStr);
-        savedClasses.push(cls);
-      }
+      firebasePatch('feeStructure', existing.id, { section: section, totalAmount: total, lineItems: lineItems });
     } else {
-      // Insert new row
       var id = generateId();
-      var newRow = [id, cls, section, data.term, data.session,
-        0, 0, 0, 0, total];
-      sheet.appendRow(newRow);
-      // Write lineItems to column 11
-      var lastRow = sheet.getLastRow();
-      if (sheet.getMaxColumns() < 11) sheet.insertColumnsAfter(sheet.getMaxColumns(), 11 - sheet.getMaxColumns());
-      sheet.getRange(lastRow, 11).setValue(lineItemsStr);
-      savedClasses.push(cls);
+      firebaseSet('feeStructure', id, { id: id, className: cls, section: section, term: data.term, session: data.session,
+        totalAmount: total, lineItems: lineItems, createdAt: new Date().toISOString() });
     }
-  }
-
-  return { success: true, message: 'Fee structures saved/updated for: ' + savedClasses.join(', ') + '. Total: ' + formatNaira(total) };
+    saved.push(cls);
+  });
+  return { success: true, message: 'Fee structures saved for: ' + saved.join(', ') + '. Total: ' + formatNaira(total) };
 }
 
 function deleteFeeStructure(feeId) {
-  var sheet = getSpreadsheet().getSheetByName('FeeStructure');
-  var row = findRowById(sheet, feeId);
-  if (row === -1) return { success: false, message: 'Fee structure not found.' };
-  sheet.deleteRow(row);
+  firebaseDelete('feeStructure', feeId);
   return { success: true, message: 'Fee structure deleted.' };
 }
 
-// --- BILL GENERATION ----------------------------------------
+// --- BILL GENERATION -----------------------------------------
 
-/**
- * Generate bills for all active students in a term/session.
- * Looks up the fee structure for each student's class.
- */
 function generateTermBills(term, session, recordedByUserId, section) {
   var students = getAllStudents().filter(function(s) {
     if (String(s.status || 'active') !== 'active') return false;
@@ -119,330 +63,255 @@ function generateTermBills(term, session, recordedByUserId, section) {
     return true;
   });
   var feeStructures = getAllFeeStructures();
-  var billSheet = getSpreadsheet().getSheetByName('Bills');
-  var generated = 0; var skipped = 0;
+  var generated = 0, skipped = 0;
+  var writes = [], payWrites = [];
 
   students.forEach(function(student) {
-    var sid = student.iD || student.id;
-    var className = student.class || student.className || '';
+    var sid = student.id, className = student.className || '';
+    var existing = firebaseQuery('bills', [
+      { field: 'studentId', op: 'EQUAL', value: String(sid) },
+      { field: 'term',      op: 'EQUAL', value: String(term) },
+      { field: 'session',   op: 'EQUAL', value: String(session) }
+    ]);
+    if (existing && existing.length > 0) { skipped++; return; }
 
-    // Check if bill already exists
-    var existing = getSheetData('Bills').find(function(b) {
-      return String(b.studentID || b.studentId) === String(sid) &&
-             String(b.term) === String(term) && String(b.session) === String(session);
-    });
-    if (existing) { skipped++; return; }
-
-    // Find fee structure
     var fee = feeStructures.find(function(f) {
       return String(f.className) === String(className) &&
              String(f.term) === String(term) && String(f.session) === String(session);
     });
     if (!fee) { skipped++; return; }
 
-    var total = safeFloat(fee.totalFee, 0);
+    var total = safeFloat(fee.totalAmount, 0);
     var credit = getStudentCreditBalance(sid);
-    var appliedCredit = 0;
-    if (credit > 0) {
-      appliedCredit = Math.min(credit, total);
-    }
-    
+    var appliedCredit = Math.min(credit, total);
     var finalBalance = total - appliedCredit;
-    var status = finalBalance <= 0 ? 'Paid' : (appliedCredit > 0 ? 'Partial' : 'Outstanding');
-    
-    var id = generateId();
-    billSheet.appendRow([id, sid, student.fullName, className, term, session, total, appliedCredit, finalBalance, status, todayISO()]);
-    
-    if (appliedCredit > 0) {
-      var paySheet = getSpreadsheet().getSheetByName('Payments');
-      var receiptRef = generateReceiptRef();
-      var payId = generateId();
-      paySheet.appendRow([payId, id, sid, term, session,
-        appliedCredit, todayISO(), 'Credit Deduction', receiptRef, recordedByUserId || 'system', 'false', 'Approved', '']);
-    }
+    var billStatus = finalBalance <= 0 ? 'Paid' : (appliedCredit > 0 ? 'Partial' : 'Outstanding');
+    var billId = generateId();
 
+    writes.push({ type: 'set', collection: 'bills', docId: billId, data: {
+      id: billId, studentId: sid, studentName: student.fullName, className: className,
+      term: term, session: session, totalBilled: total, totalPaid: appliedCredit,
+      balance: finalBalance, status: billStatus, createdAt: todayISO()
+    }});
+
+    if (appliedCredit > 0) {
+      var payId = generateId(), rRef = generateReceiptRef();
+      payWrites.push({ type: 'set', collection: 'payments', docId: payId, data: {
+        id: payId, billId: billId, studentId: sid, term: term, session: session,
+        amount: appliedCredit, date: todayISO(), method: 'Credit Deduction', receiptRef: rRef,
+        recordedBy: recordedByUserId || 'system', emailSent: 'false', status: 'Approved', receiptUrl: ''
+      }});
+    }
     generated++;
+    if (writes.length >= 499) { firebaseBatchWrite(writes); writes = []; }
   });
 
-  SpreadsheetApp.flush();
+  if (writes.length > 0) firebaseBatchWrite(writes);
+  if (payWrites.length > 0) firebaseBatchWrite(payWrites);
   logAudit(recordedByUserId, 'GENERATE_BILLS', term + ' ' + session + ': ' + generated + ' bills, ' + skipped + ' skipped');
-  return { success: true, message: generated + ' bill(s) generated. ' + skipped + ' skipped (existing or no fee structure).' };
+  return { success: true, message: generated + ' bill(s) generated. ' + skipped + ' skipped.' };
 }
 
 function getAllBills(filters) {
-  var bills = getSheetData('Bills');
+  var bills;
+  if (filters && filters.studentId) {
+    bills = firebaseQuery('bills', [{ field: 'studentId', op: 'EQUAL', value: String(filters.studentId) }]);
+  } else if (filters && filters.term && filters.session) {
+    bills = firebaseQuery('bills', [
+      { field: 'term',    op: 'EQUAL', value: String(filters.term) },
+      { field: 'session', op: 'EQUAL', value: String(filters.session) }
+    ]);
+  } else {
+    bills = firebaseGetAll('bills');
+  }
   if (!filters) return bills;
-  // Pre-load students for section filtering (more reliable than class lookup)
   var students = filters.section && filters.section !== 'both' ? getAllStudents() : null;
   return bills.filter(function(b) {
-    var ok = true;
-    if (filters.term && String(b.term) !== String(filters.term)) ok = false;
-    if (filters.session && String(b.session) !== String(filters.session)) ok = false;
-    if (filters.className && String(b.class || b.className || '') !== String(filters.className)) ok = false;
-    if (filters.status && String(b.status || '').toLowerCase() !== String(filters.status).toLowerCase()) ok = false;
-    if (filters.studentId && String(b.studentID || b.studentId) !== String(filters.studentId)) ok = false;
-    if (students && ok) {
-      var student = students.find(function(s) { return String(s.iD || s.id) === String(b.studentID || b.studentId); });
-      // Exclude if student not found or belongs to a different section
-      if (!student || student.section !== filters.section) ok = false;
+    if (filters.term      && String(b.term)      !== String(filters.term))      return false;
+    if (filters.session   && String(b.session)   !== String(filters.session))   return false;
+    if (filters.className && String(b.className) !== String(filters.className)) return false;
+    if (filters.status    && String(b.status||'').toLowerCase() !== String(filters.status).toLowerCase()) return false;
+    if (filters.studentId && String(b.studentId) !== String(filters.studentId)) return false;
+    if (students) {
+      var s = students.find(function(s2) { return String(s2.id) === String(b.studentId); });
+      if (!s || s.section !== filters.section) return false;
     }
-    return ok;
+    return true;
   });
 }
 
 function getStudentBill(studentId, term, session) {
-  return getSheetData('Bills').find(function(b) {
-    return String(b.studentID || b.studentId) === String(studentId) &&
-           String(b.term) === String(term) && String(b.session) === String(session);
-  }) || null;
+  var results = firebaseQuery('bills', [
+    { field: 'studentId', op: 'EQUAL', value: String(studentId) },
+    { field: 'term',      op: 'EQUAL', value: String(term) },
+    { field: 'session',   op: 'EQUAL', value: String(session) }
+  ]);
+  return results && results.length > 0 ? results[0] : null;
 }
 
-// --- PAYMENT RECORDING --------------------------------------
+// --- PAYMENT RECORDING ---------------------------------------
+
+function _updateBillAfterPayment(billId, amount) {
+  var bill = firebaseGet('bills', billId);
+  if (!bill) return;
+  var newPaid    = safeFloat(bill.totalPaid, 0) + amount;
+  var newBalance = safeFloat(bill.totalBilled, 0) - newPaid;
+  var status     = newBalance <= 0 ? 'Paid' : (newPaid > 0 ? 'Partial' : 'Outstanding');
+  firebasePatch('bills', billId, { totalPaid: newPaid, balance: Math.max(0, newBalance), status: status });
+}
 
 function recordPayment(data, recordedByUserId) {
   if (!data.studentId || !data.term || !data.session || !data.amount)
     return { success: false, message: 'Student, term, session, and amount required.' };
-
   var amount = safeFloat(data.amount, 0);
   if (amount <= 0) return { success: false, message: 'Amount must be greater than zero.' };
 
-  // Find or create bill
   var bill = getStudentBill(data.studentId, data.term, data.session);
   if (!bill) return { success: false, message: 'Bill not found. Please generate bills first.' };
 
-  var billId = bill.iD || bill.id;
+  var billId  = bill.id;
   var newPaid = safeFloat(bill.totalPaid, 0) + amount;
-  var billed = safeFloat(bill.totalBilled, 0);
-  var newBalance = billed - newPaid;
-  var status = newBalance <= 0 ? 'Paid' : (newPaid > 0 ? 'Partial' : 'Outstanding');
+  var balance = Math.max(0, safeFloat(bill.totalBilled, 0) - newPaid);
+  var status  = balance <= 0 ? 'Paid' : (newPaid > 0 ? 'Partial' : 'Outstanding');
 
-  // Update bill
-  var billSheet = getSpreadsheet().getSheetByName('Bills');
-  var billRow = findRowById(billSheet, billId);
-  if (billRow > 0) {
-    billSheet.getRange(billRow, 8).setValue(newPaid);
-    billSheet.getRange(billRow, 9).setValue(Math.max(0, newBalance));
-    billSheet.getRange(billRow, 10).setValue(status);
-  }
+  firebasePatch('bills', billId, { totalPaid: newPaid, balance: balance, status: status });
 
-  // Record payment (Approved by default for staff)
-  var paySheet = getSpreadsheet().getSheetByName('Payments');
-  var receiptRef = generateReceiptRef();
-  var payId = generateId();
-  paySheet.appendRow([payId, billId, data.studentId, data.term, data.session,
-    amount, todayISO(), data.method || 'Cash', receiptRef, recordedByUserId || '', 'false', 'Approved', '']);
+  var rRef = generateReceiptRef(), payId = generateId();
+  firebaseSet('payments', payId, {
+    id: payId, billId: billId, studentId: data.studentId, term: data.term, session: data.session,
+    amount: amount, date: todayISO(), method: data.method || 'Cash', receiptRef: rRef,
+    recordedBy: recordedByUserId || '', emailSent: 'false', status: 'Approved', receiptUrl: ''
+  });
 
-  SpreadsheetApp.flush();
-  logAudit(recordedByUserId, 'RECORD_PAYMENT', 'Student: ' + data.studentId + ' Amount: ' + amount + ' Ref: ' + receiptRef);
-
-  // Send email receipt to parent
+  logAudit(recordedByUserId, 'RECORD_PAYMENT', 'Student: ' + data.studentId + ' Amount: ' + amount + ' Ref: ' + rRef);
   try { sendPaymentReceipt(payId); } catch(e) { Logger.log('Email failed: ' + e); }
-
-  return { success: true, paymentId: payId, receiptRef: receiptRef,
-    newBalance: Math.max(0, newBalance), status: status,
-    message: 'Payment of ' + formatNaira(amount) + ' recorded. Ref: ' + receiptRef };
+  return { success: true, paymentId: payId, receiptRef: rRef, newBalance: balance, status: status,
+    message: 'Payment of ' + formatNaira(amount) + ' recorded. Ref: ' + rRef };
 }
-
-// --- PARENT WORKFLOW ------------------------------------------
 
 function parentSubmitPayment(data, recordedByUserId) {
   if (!data.studentId || !data.term || !data.session || !data.amount)
     return { success: false, message: 'Student, term, session, and amount required.' };
-
   var amount = safeFloat(data.amount, 0);
   if (amount <= 0) return { success: false, message: 'Amount must be greater than zero.' };
-
   var bill = getStudentBill(data.studentId, data.term, data.session);
-  if (!bill) return { success: false, message: 'Bill not found. Cannot submit payment.' };
+  if (!bill) return { success: false, message: 'Bill not found.' };
 
   var receiptUrl = '';
   if (data.proofOfPayment) {
-    receiptUrl = uploadReceiptToDrive(data.proofOfPayment, 'Receipt_' + data.studentId + '_' + Date.now());
+    var driveResult = uploadFileToDrive(data.proofOfPayment, 'Receipt_' + data.studentId + '_' + Date.now(), 'Receipts');
+    receiptUrl = driveResult.viewUrl || '';
   }
 
-  var paySheet = getSpreadsheet().getSheetByName('Payments');
-  var receiptRef = generateReceiptRef();
-  var payId = generateId();
-  
-  // Notice we DO NOT update the Bills sheet here. Status is 'Pending'.
-  paySheet.appendRow([payId, bill.iD || bill.id, data.studentId, data.term, data.session,
-    amount, todayISO(), data.method || 'Bank Transfer', receiptRef, recordedByUserId || '', 'false', 'Pending', receiptUrl]);
+  var rRef = generateReceiptRef(), payId = generateId();
+  firebaseSet('payments', payId, {
+    id: payId, billId: bill.id, studentId: data.studentId, term: data.term, session: data.session,
+    amount: amount, date: todayISO(), method: data.method || 'Bank Transfer', receiptRef: rRef,
+    recordedBy: recordedByUserId || '', emailSent: 'false', status: 'Pending', receiptUrl: receiptUrl
+  });
 
-  SpreadsheetApp.flush();
-  logAudit(recordedByUserId, 'SUBMIT_PAYMENT', 'Student: ' + data.studentId + ' Amount: ' + amount + ' Ref: ' + receiptRef);
-
-  return { success: true, paymentId: payId, receiptRef: receiptRef,
+  logAudit(recordedByUserId, 'SUBMIT_PAYMENT', 'Student: ' + data.studentId + ' Amount: ' + amount + ' Ref: ' + rRef);
+  return { success: true, paymentId: payId, receiptRef: rRef,
     message: 'Payment of ' + formatNaira(amount) + ' submitted for validation.' };
 }
 
 function approvePayment(paymentId, approverUserId) {
-  var paySheet = getSpreadsheet().getSheetByName('Payments');
-  var pRow = findRowById(paySheet, paymentId);
-  if (pRow === -1) return { success: false, message: 'Payment not found.' };
-
-  var currentStatus = paySheet.getRange(pRow, 12).getValue();
-  if (currentStatus === 'Approved') return { success: false, message: 'Already approved.' };
-
-  var billId = paySheet.getRange(pRow, 2).getValue();
-  var amount = safeFloat(paySheet.getRange(pRow, 6).getValue(), 0);
-
-  // Update payment status
-  paySheet.getRange(pRow, 12).setValue('Approved');
-
-  // Update bill balance
-  var billSheet = getSpreadsheet().getSheetByName('Bills');
-  var bRow = findRowById(billSheet, billId);
-  if (bRow > 0) {
-    var billed = safeFloat(billSheet.getRange(bRow, 7).getValue(), 0);
-    var oldPaid = safeFloat(billSheet.getRange(bRow, 8).getValue(), 0);
-    var newPaid = oldPaid + amount;
-    var newBalance = billed - newPaid;
-    var bStatus = newBalance <= 0 ? 'Paid' : (newPaid > 0 ? 'Partial' : 'Outstanding');
-
-    billSheet.getRange(bRow, 8).setValue(newPaid);
-    billSheet.getRange(bRow, 9).setValue(Math.max(0, newBalance));
-    billSheet.getRange(bRow, 10).setValue(bStatus);
-  }
-
-  SpreadsheetApp.flush();
+  var pay = firebaseGet('payments', paymentId);
+  if (!pay) return { success: false, message: 'Payment not found.' };
+  if (pay.status === 'Approved') return { success: false, message: 'Already approved.' };
+  firebasePatch('payments', paymentId, { status: 'Approved' });
+  _updateBillAfterPayment(pay.billId, safeFloat(pay.amount, 0));
   logAudit(approverUserId, 'APPROVE_PAYMENT', 'Payment ID: ' + paymentId);
-
-  // Send receipt email
   try { sendPaymentReceipt(paymentId); } catch(e) {}
-
   return { success: true, message: 'Payment approved successfully.' };
 }
 
 function rejectPayment(paymentId, rejectorUserId) {
-  var paySheet = getSpreadsheet().getSheetByName('Payments');
-  var pRow = findRowById(paySheet, paymentId);
-  if (pRow === -1) return { success: false, message: 'Payment not found.' };
-
-  var currentStatus = paySheet.getRange(pRow, 12).getValue();
-  if (currentStatus === 'Approved') return { success: false, message: 'Cannot reject an already approved payment.' };
-
-  paySheet.getRange(pRow, 12).setValue('Rejected');
-  SpreadsheetApp.flush();
+  var pay = firebaseGet('payments', paymentId);
+  if (!pay) return { success: false, message: 'Payment not found.' };
+  if (pay.status === 'Approved') return { success: false, message: 'Cannot reject an approved payment.' };
+  firebasePatch('payments', paymentId, { status: 'Rejected' });
   logAudit(rejectorUserId, 'REJECT_PAYMENT', 'Payment ID: ' + paymentId);
-
-  // Send rejection email to parent
-  try { sendPaymentRejection(paymentId); } catch(e) { Logger.log('Reject email error: ' + e); }
-
+  try { sendPaymentRejection(paymentId); } catch(e) {}
   return { success: true, message: 'Payment rejected.' };
 }
 
 function reversePayment(paymentId, reason, userId) {
-  var paySheet = getSpreadsheet().getSheetByName('Payments');
-  var pRow = findRowById(paySheet, paymentId);
-  if (pRow === -1) return { success: false, message: 'Payment not found.' };
-
-  var currentStatus = paySheet.getRange(pRow, 12).getValue();
-  if (currentStatus !== 'Approved') return { success: false, message: 'Only approved payments can be reversed.' };
-
-  var billId = paySheet.getRange(pRow, 2).getValue();
-  var amount = safeFloat(paySheet.getRange(pRow, 6).getValue(), 0);
-
-  // Update payment status
-  paySheet.getRange(pRow, 12).setValue('Reversed');
-
-  // Update bill balance
-  var billSheet = getSpreadsheet().getSheetByName('Bills');
-  var bRow = findRowById(billSheet, billId);
-  if (bRow > 0) {
-    var billed = safeFloat(billSheet.getRange(bRow, 7).getValue(), 0);
-    var oldPaid = safeFloat(billSheet.getRange(bRow, 8).getValue(), 0);
-    var newPaid = Math.max(0, oldPaid - amount);
-    var newBalance = billed - newPaid;
-    var bStatus = newBalance <= 0 ? 'Paid' : (newPaid > 0 ? 'Partial' : 'Outstanding');
-
-    billSheet.getRange(bRow, 8).setValue(newPaid);
-    billSheet.getRange(bRow, 9).setValue(Math.max(0, newBalance));
-    billSheet.getRange(bRow, 10).setValue(bStatus);
+  var pay = firebaseGet('payments', paymentId);
+  if (!pay) return { success: false, message: 'Payment not found.' };
+  if (pay.status !== 'Approved') return { success: false, message: 'Only approved payments can be reversed.' };
+  firebasePatch('payments', paymentId, { status: 'Reversed' });
+  // Subtract from bill
+  var bill = firebaseGet('bills', pay.billId);
+  if (bill) {
+    var newPaid = Math.max(0, safeFloat(bill.totalPaid,0) - safeFloat(pay.amount,0));
+    var newBal  = safeFloat(bill.totalBilled,0) - newPaid;
+    firebasePatch('bills', pay.billId, { totalPaid: newPaid, balance: Math.max(0,newBal), status: newBal<=0?'Paid':(newPaid>0?'Partial':'Outstanding') });
   }
-
-  SpreadsheetApp.flush();
-  logAudit(userId, 'REVERSE_PAYMENT', 'Payment ID: ' + paymentId + ' Reason: ' + (reason || 'No reason provided'));
-
+  logAudit(userId, 'REVERSE_PAYMENT', 'Payment ID: ' + paymentId + ' Reason: ' + (reason || ''));
   return { success: true, message: 'Payment reversed successfully.' };
 }
 
 function recordCreditNote(data, recordedByUserId) {
   if (!data.studentId || !data.term || !data.session || !data.amount || !data.type)
     return { success: false, message: 'Student, term, session, amount, and type required.' };
-
   var amount = safeFloat(data.amount, 0);
   if (amount <= 0) return { success: false, message: 'Amount must be greater than zero.' };
-
   var bill = getStudentBill(data.studentId, data.term, data.session);
-  if (!bill) return { success: false, message: 'Bill not found. Please generate bills first.' };
+  if (!bill) return { success: false, message: 'Bill not found.' };
+  if (data.type === 'Write-Off') amount = Math.min(amount, safeFloat(bill.balance, 0));
+  if (amount <= 0) return { success: false, message: 'Nothing to write off.' };
 
-  var currentBalance = safeFloat(bill.balance, 0);
-  if (data.type === 'Write-Off' && amount > currentBalance) {
-      amount = currentBalance; // Cap write-off to current balance
-  }
+  var billId = bill.id;
+  var newPaid = safeFloat(bill.totalPaid,0) + amount;
+  var newBal  = safeFloat(bill.totalBilled,0) - newPaid;
+  var status  = newBal <= 0 ? 'Paid' : (newPaid > 0 ? 'Partial' : 'Outstanding');
+  firebasePatch('bills', billId, { totalPaid: newPaid, balance: Math.max(0,newBal), status: status });
 
-  if (amount <= 0) return { success: false, message: 'Adjusted amount is zero. Nothing to do.' };
-
-  var billId = bill.iD || bill.id;
-  var newPaid = safeFloat(bill.totalPaid, 0) + amount;
-  var billed = safeFloat(bill.totalBilled, 0);
-  var newBalance = billed - newPaid;
-  var status = newBalance <= 0 ? 'Paid' : (newPaid > 0 ? 'Partial' : 'Outstanding');
-
-  var billSheet = getSpreadsheet().getSheetByName('Bills');
-  var billRow = findRowById(billSheet, billId);
-  if (billRow > 0) {
-    billSheet.getRange(billRow, 8).setValue(newPaid);
-    billSheet.getRange(billRow, 9).setValue(data.type === 'Credit Note' ? newBalance : Math.max(0, newBalance));
-    billSheet.getRange(billRow, 10).setValue(status);
-  }
-
-  var paySheet = getSpreadsheet().getSheetByName('Payments');
-  var receiptRef = data.type === 'Write-Off' ? 'WO-' + generateId().substring(0,6) : 'CN-' + generateId().substring(0,6);
+  var rRef = (data.type === 'Write-Off' ? 'WO-' : 'CN-') + generateId().substring(0,6);
   var payId = generateId();
-  paySheet.appendRow([payId, billId, data.studentId, data.term, data.session,
-    amount, todayISO(), data.type, receiptRef, recordedByUserId || '', 'false', 'Approved', '']);
-
-  SpreadsheetApp.flush();
-  logAudit(recordedByUserId, 'RECORD_' + data.type.toUpperCase().replace('-','_'), 'Student: ' + data.studentId + ' Amount: ' + amount + ' Reason: ' + (data.reason || ''));
-
-  return { success: true, paymentId: payId,
-    newBalance: data.type === 'Credit Note' ? newBalance : Math.max(0, newBalance), status: status,
-    message: data.type + ' of ' + formatNaira(amount) + ' recorded.' };
+  firebaseSet('payments', payId, {
+    id: payId, billId: billId, studentId: data.studentId, term: data.term, session: data.session,
+    amount: amount, date: todayISO(), method: data.type, receiptRef: rRef,
+    recordedBy: recordedByUserId || '', emailSent: 'false', status: 'Approved', receiptUrl: ''
+  });
+  logAudit(recordedByUserId, 'RECORD_' + data.type.toUpperCase().replace('-','_'), 'Student: ' + data.studentId + ' Amount: ' + amount);
+  return { success: true, paymentId: payId, newBalance: Math.max(0,newBal), status: status, message: data.type + ' of ' + formatNaira(amount) + ' recorded.' };
 }
 
 function getAllPayments(filters) {
-  var payments = getSheetData('Payments');
+  var payments;
+  if (filters && filters.studentId) {
+    payments = firebaseQuery('payments', [{ field: 'studentId', op: 'EQUAL', value: String(filters.studentId) }]);
+  } else if (filters && filters.term && filters.session) {
+    payments = firebaseQuery('payments', [
+      { field: 'term', op: 'EQUAL', value: String(filters.term) },
+      { field: 'session', op: 'EQUAL', value: String(filters.session) }
+    ]);
+  } else { payments = firebaseGetAll('payments'); }
   if (!filters) return payments;
   var students = filters.section && filters.section !== 'both' ? getAllStudents() : null;
   return payments.filter(function(p) {
-    var ok = true;
-    if (filters.studentId && String(p.studentID || p.studentId) !== String(filters.studentId)) ok = false;
-    if (filters.term && String(p.term) !== String(filters.term)) ok = false;
-    if (filters.session && String(p.session) !== String(filters.session)) ok = false;
-    if (filters.status && String(p.status || '').toLowerCase() !== String(filters.status).toLowerCase()) ok = false;
-    if (students && ok) {
-      var student = students.find(function(s) { return String(s.iD || s.id) === String(p.studentID || p.studentId); });
-      // Exclude if student not found or belongs to a different section
-      if (!student || student.section !== filters.section) ok = false;
+    if (filters.studentId && String(p.studentId) !== String(filters.studentId)) return false;
+    if (filters.term      && String(p.term)      !== String(filters.term))      return false;
+    if (filters.session   && String(p.session)   !== String(filters.session))   return false;
+    if (filters.status    && String(p.status||'').toLowerCase() !== String(filters.status).toLowerCase()) return false;
+    if (students) {
+      var s = students.find(function(s2) { return String(s2.id) === String(p.studentId); });
+      if (!s || s.section !== filters.section) return false;
     }
-    return ok;
+    return true;
   });
 }
 
 function getStudentPayments(studentId) {
-  return getSheetData('Payments').filter(function(p) {
-    return String(p.studentID || p.studentId) === String(studentId);
-  });
+  return firebaseQuery('payments', [{ field: 'studentId', op: 'EQUAL', value: String(studentId) }]);
 }
 
 function getStudentLedger(studentId) {
-  var bills = getAllBills({ studentId: studentId });
-  var payments = getStudentPayments(studentId);
-  return { bills: bills, payments: payments, creditBalance: getStudentCreditBalance(studentId) };
+  return { bills: getAllBills({ studentId: studentId }),
+    payments: getStudentPayments(studentId), creditBalance: getStudentCreditBalance(studentId) };
 }
-
-// --- DEBTORS ------------------------------------------------
 
 function getDebtors(term, session) {
   return getAllBills({ term: term, session: session }).filter(function(b) {
@@ -450,105 +319,73 @@ function getDebtors(term, session) {
   }).sort(function(a, b) { return safeFloat(b.balance, 0) - safeFloat(a.balance, 0); });
 }
 
-// --- EXPENSES -----------------------------------------------
+// --- EXPENSES ------------------------------------------------
 
 function getAllExpenses(filters) {
-  var expenses = getSheetData('Expenses');
+  var expenses = firebaseGetAll('expenses');
   if (!filters) return expenses;
   return expenses.filter(function(e) {
-    var ok = true;
-    if (filters.section && String(e.section) !== String(filters.section)) ok = false;
-    if (filters.category && String(e.category).toLowerCase() !== String(filters.category).toLowerCase()) ok = false;
-    return ok;
+    if (filters.section   && String(e.section) !== String(filters.section)) return false;
+    if (filters.category  && String(e.category).toLowerCase() !== String(filters.category).toLowerCase()) return false;
+    return true;
   });
 }
 
 function recordExpense(data, recordedByUserId) {
   if (!data.category || !data.amount) return { success: false, message: 'Category and amount required.' };
-  var sheet = getSpreadsheet().getSheetByName('Expenses');
   var id = generateId();
-  sheet.appendRow([id, data.category, data.description || '', safeFloat(data.amount, 0),
-    data.date || todayISO(), recordedByUserId || '', data.section || 'both']);
+  firebaseSet('expenses', id, { id: id, category: data.category, description: data.description || '',
+    amount: safeFloat(data.amount, 0), date: data.date || todayISO(),
+    recordedBy: recordedByUserId || '', section: data.section || 'both', receiptUrl: '' });
   logAudit(recordedByUserId, 'RECORD_EXPENSE', data.category + ': ' + data.amount);
   return { success: true, id: id, message: 'Expense recorded.' };
 }
 
 function deleteExpense(expenseId, userId) {
-  var sheet = getSpreadsheet().getSheetByName('Expenses');
-  var row = findRowById(sheet, expenseId);
-  if (row === -1) return { success: false, message: 'Expense not found.' };
-  sheet.deleteRow(row);
+  firebaseDelete('expenses', expenseId);
   logAudit(userId, 'DELETE_EXPENSE', 'Expense ID: ' + expenseId);
   return { success: true, message: 'Expense deleted.' };
 }
 
-// --- INCOME & EXPENDITURE REPORT ----------------------------
+// --- REPORTS -------------------------------------------------
 
 function getIncomeExpenseReport(term, session) {
-  // Only count Approved payments as confirmed income
   var payments = getAllPayments({ term: term, session: session });
-  var approvedPayments = payments.filter(function(p) { return String(p.status || '').toLowerCase() === 'approved'; });
-  var pendingPayments = payments.filter(function(p) { return String(p.status || '').toLowerCase() === 'pending'; });
+  var approved = payments.filter(function(p) { return String(p.status||'').toLowerCase() === 'approved'; });
+  var pending  = payments.filter(function(p) { return String(p.status||'').toLowerCase() === 'pending'; });
   var expenses = getAllExpenses();
-
-  var totalIncome = approvedPayments.reduce(function(sum, p) { return sum + safeFloat(p.amount, 0); }, 0);
-  var totalPending = pendingPayments.reduce(function(sum, p) { return sum + safeFloat(p.amount, 0); }, 0);
-  var totalExpenses = expenses.reduce(function(sum, e) { return sum + safeFloat(e.amount, 0); }, 0);
-  var netBalance = totalIncome - totalExpenses;
-
-  // Group expenses by category
+  var totalIncome   = approved.reduce(function(s,p) { return s + safeFloat(p.amount,0); }, 0);
+  var totalPending  = pending.reduce(function(s,p)  { return s + safeFloat(p.amount,0); }, 0);
+  var totalExpenses = expenses.reduce(function(s,e) { return s + safeFloat(e.amount,0); }, 0);
   var byCategory = {};
-  expenses.forEach(function(e) {
-    var cat = e.category || 'Other';
-    byCategory[cat] = (byCategory[cat] || 0) + safeFloat(e.amount, 0);
-  });
-
-  return {
-    term: term, session: session,
-    totalIncome: totalIncome, totalPending: totalPending, totalExpenses: totalExpenses, netBalance: netBalance,
-    expensesByCategory: byCategory,
-    totalPayments: approvedPayments.length, pendingCount: pendingPayments.length, totalExpenseRecords: expenses.length
-  };
+  expenses.forEach(function(e) { var c=e.category||'Other'; byCategory[c]=(byCategory[c]||0)+safeFloat(e.amount,0); });
+  return { term:term, session:session, totalIncome:totalIncome, totalPending:totalPending,
+    totalExpenses:totalExpenses, netBalance:totalIncome-totalExpenses,
+    expensesByCategory:byCategory, totalPayments:approved.length, pendingCount:pending.length };
 }
 
-// --- FINANCIAL DASHBOARD STATS -------------------------------
-
 function getFinancialDashboardStats(term, session, section) {
-  var filters = { term: term, session: session };
-  if (section && section !== 'both') filters.section = section;
-  
-  var bills = getAllBills(filters);
-  var payments = getAllPayments(filters);
+  var f = { term: term, session: session };
+  if (section && section !== 'both') f.section = section;
+  var bills    = getAllBills(f);
   var expenses = getAllExpenses(section && section !== 'both' ? { section: section } : null);
-  
-  var totalBilled = bills.reduce(function(s, b) { return s + safeFloat(b.totalBilled, 0); }, 0);
-  var totalCollected = bills.reduce(function(s, b) { return s + safeFloat(b.totalPaid, 0); }, 0);
-  var totalOutstanding = bills.reduce(function(s, b) { return s + safeFloat(b.balance, 0); }, 0);
-  var totalExpenses = expenses.reduce(function(s, e) { return s + safeFloat(e.amount, 0); }, 0);
-  var paidCount = bills.filter(function(b) { return String(b.status) === 'Paid'; }).length;
-  var partialCount = bills.filter(function(b) { return String(b.status) === 'Partial'; }).length;
-  var outstandingCount = bills.filter(function(b) { return String(b.status) === 'Outstanding'; }).length;
-  return {
-    totalBilled: totalBilled, totalCollected: totalCollected,
-    totalOutstanding: totalOutstanding, totalExpenses: totalExpenses,
-    netBalance: totalCollected - totalExpenses, totalStudentsBilled: bills.length,
-    paidCount: paidCount, partialCount: partialCount, outstandingCount: outstandingCount
-  };
+  var totalBilled      = bills.reduce(function(s,b) { return s+safeFloat(b.totalBilled,0); }, 0);
+  var totalCollected   = bills.reduce(function(s,b) { return s+safeFloat(b.totalPaid,0); }, 0);
+  var totalOutstanding = bills.reduce(function(s,b) { return s+safeFloat(b.balance,0); }, 0);
+  var totalExpenses    = expenses.reduce(function(s,e) { return s+safeFloat(e.amount,0); }, 0);
+  return { totalBilled:totalBilled, totalCollected:totalCollected, totalOutstanding:totalOutstanding,
+    totalExpenses:totalExpenses, netBalance:totalCollected-totalExpenses, totalStudentsBilled:bills.length,
+    paidCount:bills.filter(function(b){return b.status==='Paid';}).length,
+    partialCount:bills.filter(function(b){return b.status==='Partial';}).length,
+    outstandingCount:bills.filter(function(b){return b.status==='Outstanding';}).length };
 }
 
 function getStudentCreditBalance(studentId) {
-  var payments = getSheetData('Payments').filter(function(p) {
-    return String(p.studentID || p.studentId) === String(studentId) && 
-           String(p.status).toLowerCase() === 'approved' &&
-           String(p.method).toLowerCase() !== 'credit deduction';
-  });
-  var bills = getSheetData('Bills').filter(function(b) {
-    return String(b.studentID || b.studentId) === String(studentId);
-  });
-
-  var totalPaid = payments.reduce(function(sum, p) { return sum + safeFloat(p.amount, 0); }, 0);
-  var totalBilled = bills.reduce(function(sum, b) { return sum + safeFloat(b.totalBilled, 0); }, 0);
-
+  var payments = firebaseQuery('payments', [{ field: 'studentId', op: 'EQUAL', value: String(studentId) }])
+    .filter(function(p) { return String(p.status).toLowerCase() === 'approved' && String(p.method).toLowerCase() !== 'credit deduction'; });
+  var bills = firebaseQuery('bills', [{ field: 'studentId', op: 'EQUAL', value: String(studentId) }]);
+  var totalPaid   = payments.reduce(function(s,p) { return s+safeFloat(p.amount,0); }, 0);
+  var totalBilled = bills.reduce(function(s,b)    { return s+safeFloat(b.totalBilled,0); }, 0);
   var credit = totalPaid - totalBilled;
   return credit > 0 ? credit : 0;
 }

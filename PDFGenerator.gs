@@ -1,6 +1,7 @@
-/**
- * ABECEDARIAN ACADEMY - PDFGenerator.gs
- * HTML→PDF generation via Apps Script for report cards, receipts, lesson plans.
+﻿/**
+ * MYSCHOOL PORTAL - PDFGenerator.gs
+ * HTML to PDF generation for report cards, receipts, and lesson plans.
+ * PDF files are stored in Google Drive via DriveStorage.gs.
  */
 
 // --- RESULT / REPORT CARD PDF --------------------------------
@@ -25,16 +26,14 @@ function generateResultPDF(studentId, term, session, reportType) {
     .getAs(MimeType.PDF)
     .setName(studentName + '_' + prefix + term.replace(/\s+/g, '_') + '_Report.pdf');
 
-  var folder = getOrCreateFolder((cfg.schoolName || 'My School') + ' - Reports');
-  var file = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  var driveResult = uploadBlobToDrive(blob, 'Reports');
 
   return {
     success: true,
-    pdfUrl: file.getUrl(),
-    downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId(),
-    previewUrl: 'https://drive.google.com/file/d/' + file.getId() + '/preview',
-    fileName: blob.getName()
+    pdfUrl:      driveResult.viewUrl,
+    downloadUrl: driveResult.downloadUrl,
+    previewUrl:  driveResult.previewUrl,
+    fileName:    blob.getName()
   };
 }
 
@@ -283,16 +282,14 @@ function generateBulkClassResultPDF(className, term, session, reportType) {
     .getAs(MimeType.PDF)
     .setName(className.replace(/\s+/g, '_') + '_' + prefix + term.replace(/\s+/g, '_') + '_Bulk_Result.pdf');
 
-  var folder = getOrCreateFolder((cfg.schoolName || 'My School') + ' - Reports');
-  var file = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  var driveResult = uploadBlobToDrive(blob, 'Reports');
 
   return {
     success: true,
-    pdfUrl: file.getUrl(),
-    downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId(),
-    previewUrl: 'https://drive.google.com/file/d/' + file.getId() + '/preview',
-    fileName: blob.getName()
+    pdfUrl:      driveResult.viewUrl,
+    downloadUrl: driveResult.downloadUrl,
+    previewUrl:  driveResult.previewUrl,
+    fileName:    blob.getName()
   };
 }
 

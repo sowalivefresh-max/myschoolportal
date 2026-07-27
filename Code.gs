@@ -1,16 +1,19 @@
 /**
  * ============================================================
- *  ABECEDARIAN ACADEMY - SCHOOL MANAGEMENT PORTAL
- *  Code.gs  -  Main Entry Point, Router & All Endpoints
+ *  MYSCHOOL PORTAL - Code.gs
+ *  Main Entry Point, Router & All Endpoints
+ * ============================================================
+ *  DATABASE: Firebase Firestore (see Firebase.gs)
+ *  STORAGE:  Google Drive (see DriveStorage.gs)
+ *
+ *  Script Properties required (Project Settings -> Script Properties):
+ *    FIREBASE_PROJECT_ID   - Your Firebase project ID
+ *    FIREBASE_CLIENT_EMAIL - Service account email
+ *    FIREBASE_PRIVATE_KEY  - Service account private key (PEM)
+ *
+ *  Run testFirebaseConnection() once after setting credentials.
  * ============================================================
  */
-
-const SPREADSHEET_ID = ''; // - Paste your Google Sheet ID here
-
-function getSpreadsheet() {
-  if (!SPREADSHEET_ID) return SpreadsheetApp.getActiveSpreadsheet();
-  return SpreadsheetApp.openById(SPREADSHEET_ID);
-}
 
 // --- WEB APP ENTRY POINT -------------------------------------
 
