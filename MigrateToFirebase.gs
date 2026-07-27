@@ -172,10 +172,14 @@ function migrateClasses() {
   rows.forEach(function(r) {
     var id = String(r['iD'] || r['id'] || r['ID'] || '').trim();
     if (!id) { skipped++; return; }
-    var doc = { id: id, className: String(r['className'] || r['ClassName'] || '').trim(),
-      section: String(r['section'] || r['Section'] || 'high').toLowerCase().trim(),
-      school: '', classTeacherId: String(r['classTeacherId'] || ''),
-      academicSession: String(r['academicSession'] || '') };
+    var doc = {
+      id: id,
+      className:       String(r['className']       || r['ClassName']       || '').trim(),
+      section:         String(r['section']         || r['Section']         || 'high').toLowerCase().trim(),
+      school:          String(r['school']          || r['School']          || ''),
+      classTeacherId:  String(r['classTeacherId']  || r['ClassTeacherID']  || r['ClassTeacherId'] || ''),
+      academicSession: String(r['academicSession'] || r['AcademicSession'] || '')
+    };
     writes.push({ type: 'set', collection: 'classes', docId: id, data: doc });
     migrated++;
     if (writes.length >= 499) { firebaseBatchWrite(writes); writes = []; }
@@ -191,10 +195,14 @@ function migrateSubjects() {
   rows.forEach(function(r) {
     var id = String(r['iD'] || r['id'] || r['ID'] || '').trim();
     if (!id) { skipped++; return; }
-    var doc = { id: id, subjectName: String(r['subjectName'] || r['SubjectName'] || '').trim(),
-      section: String(r['section'] || r['Section'] || 'high').toLowerCase().trim(),
-      className: String(r['className'] || r['TargetClass'] || ''),
-      assignedTeacherId: String(r['assignedTeacherId'] || '') };
+    var doc = {
+      id: id,
+      subjectName:       String(r['subjectName']       || r['SubjectName']       || '').trim(),
+      section:           String(r['section']           || r['Section']           || 'high').toLowerCase().trim(),
+      // Old sheet used column 'Class' not 'ClassName' or 'TargetClass'
+      className:         String(r['className']         || r['ClassName']         || r['Class'] || r['TargetClass'] || ''),
+      assignedTeacherId: String(r['assignedTeacherId'] || r['AssignedTeacherID'] || r['AssignedTeacherId'] || '')
+    };
     writes.push({ type: 'set', collection: 'subjects', docId: id, data: doc });
     migrated++;
     if (writes.length >= 499) { firebaseBatchWrite(writes); writes = []; }
@@ -382,19 +390,34 @@ function migrateAttendance() {
 
 function migrateLessonPlans() {
   var rows = _getLegacyData('LessonPlans');
+  // Old sheet columns (PascalCase): ID, TeacherID, SubjectID, Class, Topic,
+  // Objectives, TeachingAids, EntryBehaviour, PresentationSteps, Evaluation,
+  // Assignment, Week, Term, Session, Status, ApprovedByID, ApprovalNote, CreatedAt
   var migrated = 0, skipped = 0, writes = [];
   rows.forEach(function(r) {
     var id = String(r['iD'] || r['id'] || r['ID'] || '').trim();
     if (!id) { skipped++; return; }
-    var doc = { id: id, teacherId: String(r['teacherId'] || ''), subjectId: String(r['subjectId'] || ''),
-      className: String(r['className'] || ''), topic: String(r['topic'] || ''),
-      objectives: String(r['objectives'] || ''), teachingAids: String(r['teachingAids'] || ''),
-      entryBehaviour: String(r['entryBehaviour'] || ''), presentationSteps: String(r['presentationSteps'] || ''),
-      evaluation: String(r['evaluation'] || ''), assignment: String(r['assignment'] || ''),
-      week: String(r['week'] || ''), term: String(r['term'] || ''), session: String(r['session'] || ''),
-      status: String(r['status'] || 'draft'), approverId: String(r['approverId'] || ''),
-      approverNote: String(r['approverNote'] || ''), createdAt: String(r['createdAt'] || ''),
-      referenceBook: String(r['referenceBook'] || '') };
+    var doc = {
+      id:                id,
+      teacherId:         String(r['teacherId']         || r['TeacherID']         || r['TeacherId']         || ''),
+      subjectId:         String(r['subjectId']         || r['SubjectID']         || r['SubjectId']         || ''),
+      className:         String(r['className']         || r['ClassName']         || r['Class']             || ''),
+      topic:             String(r['topic']             || r['Topic']             || ''),
+      objectives:        String(r['objectives']        || r['Objectives']        || ''),
+      teachingAids:      String(r['teachingAids']      || r['TeachingAids']      || ''),
+      entryBehaviour:    String(r['entryBehaviour']    || r['EntryBehaviour']    || ''),
+      presentationSteps: String(r['presentationSteps'] || r['PresentationSteps'] || ''),
+      evaluation:        String(r['evaluation']        || r['Evaluation']        || ''),
+      assignment:        String(r['assignment']        || r['Assignment']        || ''),
+      week:              String(r['week']              || r['Week']              || ''),
+      term:              String(r['term']              || r['Term']              || ''),
+      session:           String(r['session']           || r['Session']           || ''),
+      status:            String(r['status']            || r['Status']           || 'draft'),
+      approverId:        String(r['approverId']        || r['ApprovedByID']      || r['ApprovedById']      || ''),
+      approverNote:      String(r['approverNote']      || r['ApprovalNote']      || ''),
+      createdAt:         String(r['createdAt']         || r['CreatedAt']         || ''),
+      referenceBook:     String(r['referenceBook']     || r['ReferenceBook']     || '')
+    };
     writes.push({ type: 'set', collection: 'lessonPlans', docId: id, data: doc });
     migrated++;
     if (writes.length >= 499) { firebaseBatchWrite(writes); writes = []; }
