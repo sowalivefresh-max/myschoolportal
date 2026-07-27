@@ -937,7 +937,7 @@ function teacherGetMyLessonPlans(token, term, sess) {
 }
 function teacherGenerateLessonPlanPDF(token, planId) {
   requirePlan('standard', token);
-  requireRole(token, ['teacher','primary_teacher']);
+  requireRole(token, ['teacher','primary_teacher','principal','vp','headteacher','admin','admin_assistant']);
   return generateLessonPlanPDF(planId);
 }
 function teacherEnrollStudent(token, sid, subId, sess, term) {
