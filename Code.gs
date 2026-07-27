@@ -512,49 +512,52 @@ function adminResetUserPassword(token, uid) {
 function adminImpersonateUser(token, targetUserId) {
   requirePlan('standard', token);
   var s = requireRole(token, 'admin');
-  var users = getSheetData('Users');
-  var targetUser = users.find(function(u) { return String(u.id || u.iD) === String(targetUserId); });
+  var targetUser = firebaseGet('users', targetUserId);
 
   if (!targetUser) return { success: false, message: 'User not found.' };
   if (targetUser.status !== 'active') return { success: false, message: 'Cannot impersonate a suspended user.' };
 
-  var newToken = createSession(targetUser.id || targetUser.iD, targetUser.role, targetUser.fullName, targetUser.section);
+  var newToken = createSession(targetUser.id || targetUserId, targetUser.role, targetUser.fullName, targetUser.section);
   logAudit(s.userId, 'IMPERSONATE', s.fullName + ' impersonated ' + targetUser.fullName + ' (' + targetUser.role + ')');
 
   return { success: true, url: getDashboardUrl(newToken), token: newToken, role: targetUser.role };
 }
 function adminGetPasswordRequests(token) {
   requireRole(token,['admin','admin_assistant']);
-  return getSheetData('PasswordRequests').filter(function(r){ return r.status === 'pending'; });
+  return firebaseGetAll('passwordRequests').filter(function(r){ return r.status === 'pending'; });
 }
 function adminProcessPasswordReset(token, requestId, newPassword) {
   var s = requireRole(token,['admin','admin_assistant']);
   if (s.role === 'admin_assistant') return logPendingTask('PROCESS_PWD_RESET', {requestId: requestId, newPassword: newPassword}, s.userId);
-  var sheet = getSpreadsheet().getSheetByName('PasswordRequests');
-  var row = findRowById(sheet, requestId);
-  if (row === -1) return { success: false, message: 'Request not found.' };
   
-  var email = sheet.getRange(row, 2).getValue();
-  var users = getSheetData('Users');
-  var user = users.find(function(u){ return u.email.toLowerCase() === email.toLowerCase(); });
+  var req = firebaseGet('passwordRequests', requestId);
+  if (!req) return { success: false, message: 'Request not found.' };
   
-  if (!user) return { success: false, message: 'User with this email not found.' };
+  var email = req.email;
+  var users = firebaseQuery('users', [{field: 'email', op: 'EQUAL', value: email.toLowerCase()}]);
   
-  var res = updateUser(user.id, { password: newPassword });
+  if (!users || users.length === 0) return { success: false, message: 'User with this email not found.' };
+  
+  var res = updateUser(users[0].id, { password: newPassword });
   if (res.success) {
-    sheet.getRange(row, 5).setValue('completed');
+    firebasePatch('passwordRequests', requestId, { status: 'completed' });
     logAudit('admin', 'RESET_PWD_REQUEST', 'Approved reset for: ' + email);
   }
   return res;
 }
 function requestPasswordReset(email) {
   if (!email) return { success: false, message: 'Email required.' };
-  var users = getSheetData('Users');
-  var user = users.find(function(u){ return u.email.toLowerCase() === email.trim().toLowerCase(); });
-  if (!user) return { success: false, message: 'Email not found in our records.' };
+  var users = firebaseQuery('users', [{field: 'email', op: 'EQUAL', value: email.trim().toLowerCase()}]);
+  if (!users || users.length === 0) return { success: false, message: 'Email not found in our records.' };
+  var user = users[0];
   
-  var sheet = getSpreadsheet().getSheetByName('PasswordRequests');
-  sheet.appendRow([generateId(), email.trim().toLowerCase(), user.fullName, user.role, 'pending', new Date().toISOString()]);
+  firebaseAdd('passwordRequests', {
+    email: email.trim().toLowerCase(),
+    requesterName: user.fullName,
+    role: user.role,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  });
   return { success: true, message: 'Reset request submitted. Please contact the school admin to get your new password.' };
 }
 function adminGetStudents(token) { requireRole(token,['admin','admin_assistant']); return getAllStudents(); }
@@ -640,7 +643,7 @@ function adminGenerateReceipt(token, payId) { requirePlan('deluxe', token); requ
 function adminGetAllLessonPlans(token, term, sess) { requirePlan('standard', token); requireRole(token,['admin','admin_assistant']); return getAllLessonPlans(term, sess); }
 function adminApproveLessonPlan(token, planId, note) { requirePlan('standard', token); var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('APPROVE_LESSON', {planId:planId, note:note}, s.userId); return approveLessonPlan(s.userId, planId, note); }
 function adminRejectLessonPlan(token, planId, note) { requirePlan('standard', token); var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('REJECT_LESSON', {planId:planId, note:note}, s.userId); return rejectLessonPlan(s.userId, planId, note); }
-function adminGetGrading(token) { requireRole(token,['admin','admin_assistant']); return getSheetData('Grading'); }
+function adminGetGrading(token) { requireRole(token,['admin','admin_assistant']); return firebaseGetAll('grading'); }
 function adminSaveGradeRule(token, data) { var s = requireRole(token,['admin','admin_assistant']); if (s.role === 'admin_assistant') return logPendingTask('SAVE_GRADE_RULE', data, s.userId); return updateGradingRule(data); }
 function adminGetStudentSubjects(token, sid) {
   requireRole(token,['admin','admin_assistant']);
@@ -679,8 +682,8 @@ function adminGetComplianceSummary(token, term, sess) {
   requireRole(token,['admin','admin_assistant']);
   
   var teachers = getAllUsers().filter(function(u) { return u.role === 'teacher' || u.role === 'primary_teacher'; });
-  var plans = getSheetData('LessonPlans').filter(function(p) { return String(p.term) === String(term) && String(p.session) === String(sess); });
-  var scores = getSheetData('Assessments').filter(function(s) { return String(s.term) === String(term) && String(s.session) === String(sess); });
+  var plans = firebaseQuery('lessonPlans', [{field: 'term', op: 'EQUAL', value: term}, {field: 'session', op: 'EQUAL', value: sess}]);
+  var scores = firebaseQuery('assessments', [{field: 'term', op: 'EQUAL', value: term}, {field: 'session', op: 'EQUAL', value: sess}]);
   
   var submittedPlans = plans.filter(function(p) { return ['submitted','approved'].indexOf(String(p.status||'').toLowerCase()) !== -1; }).length;
   
@@ -1075,7 +1078,7 @@ function parentGetStudentCredit(token, sid) {
 function parentDownloadReceipt(token, payId) {
   var s = requireRole(token,'parent');
   try {
-    var payments = getSheetData('Payments');
+    var payments = firebaseGetAll('payments');
     var payment = payments.find(function(p) { return String(p.iD || p.id) === String(payId); });
     if (!payment) return { success: false, message: 'Payment not found.' };
     _verifyParentChild(s.userId, payment.studentID || payment.studentId);
@@ -1109,7 +1112,7 @@ function _requireNotDeveloperTarget(targetUid) {
 
 function _verifyTeacherClassAuth(teacherId, className) {
   if (!className) throw new Error('Class name is required.');
-  var classes = getSheetData('Classes');
+  var classes = getAllClasses();
   var cls = classes.find(function(c) { return String(c.className || c.ClassName) === String(className); });
   if (!cls) throw new Error('Class not found.');
   if (String(cls.classTeacherId || cls.classTeacherID) !== String(teacherId)) {
@@ -1125,7 +1128,7 @@ function _verifyTeacherSubjectAuth(teacherId, subjectId) {
   }
   if (subject.className || subject.class) {
     var className = subject.className || subject.class;
-    var classes = getSheetData('Classes');
+    var classes = getAllClasses();
     var cls = classes.find(function(c) { return String(c.className || c.ClassName) === String(className); });
     if (cls && String(cls.classTeacherId || cls.classTeacherID) === String(teacherId)) {
       return true;
