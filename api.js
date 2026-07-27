@@ -7,7 +7,7 @@
 // Replace the URL below with your own Google Apps Script Web App deployment URL.
 // You get this URL from: Apps Script → Deploy → Manage deployments → Web App URL
 // -----------------------------------------------------------------------------
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz36_wTlzIdIzSH55Ezf5WcVwrNaOqr7RlbfO2uUIj6meSVLddAMakei9MIsxyXDrZg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwggcvM4vNjOmIsXSvlGIRq9_px-20ssj56zDsqEssr-m88CF6_ersCZT5MJj0UcSCVlA/exec";
 
 /**
  * Calls a backend function.
