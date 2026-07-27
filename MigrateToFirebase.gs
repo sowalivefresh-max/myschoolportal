@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================
  *  MYSCHOOL PORTAL - MigrateToFirebase.gs
  *  One-time migration: Google Sheets -> Firestore
@@ -117,18 +117,18 @@ function migrateUsers() {
     var doc = {
       id: id,
       fullName:         String(r['fullName'] || r['FullName'] || '').trim(),
-      email:            String(r['email']    || r['Email']    || '').trim().toLowerCase(),
-      passwordHash:     String(r['passwordHash'] || ''),
-      salt:             String(r['salt'] || ''),
+      email:            String(r['email'] || r['Email'] || '').trim().toLowerCase(),
+      passwordHash:     String(r['passwordHash'] || r['PasswordHash'] || ''),
+      salt:             String(r['salt'] || r['PasswordSalt'] || ''),
       role:             String(r['role'] || r['Role'] || '').toLowerCase(),
-      section:          String(r['section'] || 'both'),
-      status:           String(r['status'] || 'active'),
-      profilePicture:   String(r['profilePicture'] || ''),
-      phone:            String(r['phone'] || ''),
-      signature:        String(r['signature'] || ''),
-      classAssigned:    String(r['classAssigned'] || ''),
-      linkedStudentIds: String(r['linkedStudentIds'] || ''),
-      createdAt:        String(r['createdAt'] || new Date().toISOString())
+      section:          String(r['section'] || r['Section'] || 'both'),
+      status:           String(r['status'] || r['Status'] || 'active'),
+      profilePicture:   String(r['profilePicture'] || r['ProfilePicture'] || ''),
+      phone:            String(r['phone'] || r['Phone'] || ''),
+      signature:        String(r['signature'] || r['Signature'] || ''),
+      classAssigned:    String(r['classAssigned'] || r['ClassAssigned'] || ''),
+      linkedStudentIds: String(r['linkedStudentIds'] || r['LinkedStudentIDs'] || ''),
+      createdAt:        String(r['createdAt'] || r['CreatedAt'] || new Date().toISOString())
     };
     writes.push({ type: 'set', collection: 'users', docId: id, data: doc });
     migrated++;
