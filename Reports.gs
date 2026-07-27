@@ -64,16 +64,18 @@ function computeClassPositions(className, term, session, reportType) {
 
   // Only save positions for Full Term reports
   if (!isHalf) {
-    var sheet = getSpreadsheet().getSheetByName('Assessments');
-    var data = sheet.getDataRange().getValues();
+    var classScores = firebaseQuery('assessments', [
+      { field: 'term',    op: 'EQUAL', value: String(term) },
+      { field: 'session', op: 'EQUAL', value: String(session) }
+    ]);
+    var posWrites = [];
     ranked.forEach(function(r) {
-      for (var i = 1; i < data.length; i++) {
-        if (String(data[i][1]) === String(r.studentId) &&
-            String(data[i][5]) === String(term) && String(data[i][6]) === String(session)) {
-          sheet.getRange(i + 1, 14).setValue(r.position);
-        }
-      }
+      var matches = classScores.filter(function(s) { return String(s.studentId) === String(r.studentId); });
+      matches.forEach(function(s) {
+        posWrites.push({ type: 'patch', collection: 'assessments', docId: s.id, data: { position: r.position } });
+      });
     });
+    if (posWrites.length > 0) firebaseBatchWrite(posWrites);
   }
 
   return ranked;

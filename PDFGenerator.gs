@@ -1,4 +1,4 @@
-﻿/**
+/**
  * MYSCHOOL PORTAL - PDFGenerator.gs
  * HTML to PDF generation for report cards, receipts, and lesson plans.
  * PDF files are stored in Google Drive via DriveStorage.gs.
@@ -296,8 +296,12 @@ function generateBulkClassResultPDF(className, term, session, reportType) {
 // --- PAYMENT RECEIPT PDF -------------------------------------
 
 function generateReceiptPDF(paymentId) {
-  var payments = getSheetData('Payments');
-  var payment = payments.find(function(p) { return String(p.iD || p.id) === String(paymentId); });
+  var payment = firebaseGet('payments', paymentId);
+  if (!payment) {
+    // Fallback: search all payments by id field
+    var all = firebaseGetAll('payments');
+    payment = all.find(function(p) { return String(p.iD || p.id) === String(paymentId); }) || null;
+  }
   if (!payment) return { success: false, message: 'Payment not found.' };
 
   var student = getStudentById(payment.studentID || payment.studentId);
@@ -343,12 +347,15 @@ function generateReceiptPDF(paymentId) {
 // --- LESSON PLAN PDF -----------------------------------------
 
 function generateLessonPlanPDF(planId) {
-  var plans = getSheetData('LessonPlans');
-  var plan = plans.find(function(p) { return String(p.iD || p.id) === String(planId); });
+  var plan = firebaseGet('lessonPlans', planId);
+  if (!plan) {
+    var all = firebaseGetAll('lessonPlans');
+    plan = all.find(function(p) { return String(p.iD || p.id) === String(planId); }) || null;
+  }
   if (!plan) return { success: false, message: 'Lesson plan not found.' };
 
   var subjects = getAllSubjects();
-  var sid = plan.subjectID || plan.subjectId;
+  var sid = plan.subjectId || plan.subjectID;
   var subj = subjects.find(function(s) { return String(s.iD || s.id) === String(sid); });
   var settings = getSettings();
   var schoolName = settings.school_name || 'My School';

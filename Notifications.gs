@@ -8,8 +8,11 @@
  */
 function sendPaymentReceipt(paymentId) {
   try {
-    var payments = getSheetData('Payments');
-    var payment = payments.find(function(p) { return String(p.iD || p.id) === String(paymentId); });
+    var payment = firebaseGet('payments', paymentId);
+    if (!payment) {
+      var all = firebaseGetAll('payments');
+      payment = all.find(function(p) { return String(p.iD || p.id) === String(paymentId); }) || null;
+    }
     if (!payment) return { success: false, message: 'Payment not found.' };
 
     var studentId = payment.studentID || payment.studentId;
@@ -32,10 +35,8 @@ function sendPaymentReceipt(paymentId) {
 
     GmailApp.sendEmail(parent.email, subject, '', { htmlBody: body, name: schoolName });
 
-    // Mark email as sent
-    var sheet = getSpreadsheet().getSheetByName('Payments');
-    var row = findRowById(sheet, paymentId);
-    if (row > 0) sheet.getRange(row, 11).setValue('true');
+    // Mark email as sent in Firestore
+    firebasePatch('payments', paymentId, { emailSent: 'true' });
 
     return { success: true, message: 'Receipt emailed to ' + parent.email };
   } catch (e) {
@@ -49,8 +50,11 @@ function sendPaymentReceipt(paymentId) {
  */
 function sendPaymentRejection(paymentId) {
   try {
-    var payments = getSheetData('Payments');
-    var payment = payments.find(function(p) { return String(p.iD || p.id) === String(paymentId); });
+    var payment = firebaseGet('payments', paymentId);
+    if (!payment) {
+      var all = firebaseGetAll('payments');
+      payment = all.find(function(p) { return String(p.iD || p.id) === String(paymentId); }) || null;
+    }
     if (!payment) return { success: false, message: 'Payment not found.' };
 
     var studentId = payment.studentID || payment.studentId;
@@ -220,8 +224,6 @@ function sendOutstandingBalanceReminders(term, session, section, batchSize) {
   var schoolName = settings.school_name || 'My School';
   var sent = 0;
 
-  var billSheet = getSpreadsheet().getSheetByName('Bills');
-
   batch.forEach(function(bill) {
     try {
       var sid = bill.studentID || bill.studentId;
@@ -244,16 +246,14 @@ function sendOutstandingBalanceReminders(term, session, section, batchSize) {
       GmailApp.sendEmail(parent.email, subject, '', { htmlBody: body, name: schoolName });
       sent++;
 
-      // Update LastReminderDate in Bills sheet
-      var bRow = findRowById(billSheet, bill.iD || bill.id);
-      if (bRow > 0) {
-        if (billSheet.getMaxColumns() < 12) billSheet.insertColumnsAfter(billSheet.getMaxColumns(), 12 - billSheet.getMaxColumns());
-        billSheet.getRange(bRow, 12).setValue(now.toISOString());
-      }
+      // Update lastReminderDate in Firestore
+      var billDocId = bill.id || bill.iD;
+      if (billDocId) firebasePatch('bills', billDocId, { lastReminderDate: now.toISOString() });
+
     } catch (e) { Logger.log('Reminder error: ' + e); }
   });
 
-  SpreadsheetApp.flush();
+
   var remaining = Math.max(0, eligibleDebtors.length - sent);
 
   return { 

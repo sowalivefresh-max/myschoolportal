@@ -718,15 +718,12 @@ function adminApproveTask(token, taskId) {
       case 'DELETE_USER': res = deleteUser(p.uid); break;
       case 'RESET_PWD': res = updateUser(p.uid, { password: 'password123' }); break;
       case 'PROCESS_PWD_RESET':
-        var sheet = getSpreadsheet().getSheetByName('PasswordRequests');
-        var row = findRowById(sheet, p.requestId);
-        if (row !== -1) {
-          var email = sheet.getRange(row, 2).getValue();
-          var users = getSheetData('Users');
-          var user = users.find(function(u){ return u.email.toLowerCase() === email.toLowerCase(); });
-          if (user) {
-            res = updateUser(user.id, { password: p.newPassword });
-            if (res.success) sheet.getRange(row, 5).setValue('completed');
+        var pwdReq = firebaseGet('passwordRequests', p.requestId);
+        if (pwdReq && pwdReq.email) {
+          var pwdUsers = firebaseQuery('users', [{field: 'email', op: 'EQUAL', value: pwdReq.email.toLowerCase()}]);
+          if (pwdUsers && pwdUsers.length > 0) {
+            res = updateUser(pwdUsers[0].id, { password: p.newPassword });
+            if (res.success) firebasePatch('passwordRequests', p.requestId, { status: 'completed' });
           }
         }
         break;
@@ -1137,107 +1134,12 @@ function _verifyTeacherSubjectAuth(teacherId, subjectId) {
   throw new Error('Access denied. You are not assigned to this subject or class.');
 }
 
-// --- DATABASE SETUP ------------------------------------------
-
+// setupSheets() was used with Google Sheets backend and is no longer needed.
+// Firebase collections are created automatically when data is first written.
 function setupSheets() {
-  var ss = getSpreadsheet();
-  var schema = {
-    'Users':             ['ID','FullName','Email','PasswordHash','Role','Section','LinkedStudentIDs','ClassAssigned','Status','ProfilePicture','Phone','CreatedAt','Signature','PasswordSalt'],
-    'Students':          ['ID','FullName','AdmissionNumber','Class','Section','School','ParentID','Gender','DateOfBirth','PhotoURL','EnrollmentDate','Status'],
-    'Classes':           ['ID','ClassName','Section','School','ClassTeacherID','AcademicSession'],
-    'Subjects':          ['ID','SubjectName','Section','Class','AssignedTeacherID'],
-    'Enrollments':       ['StudentID','SubjectID','Session','Term'],
-    'Attendance':        ['ID','StudentID','Class','Date','Status','MarkedByUserID','Session','Term'],
-    'Assessments':       ['ID','StudentID','StudentName','SubjectID','Class','Term','Session','CA1','CA2','CA3','Exam','Total','Grade','Position','TeacherComment','Locked','Submitted'],
-    'PsychomotorRecords':['ID','StudentID','Class','Term','Session','Handwriting','SportSkills','Drawing','Creativity','Speaking','Attentiveness'],
-    'AffectiveRecords':  ['ID','StudentID','Class','Term','Session','Punctuality','Neatness','Politeness','Honesty','Leadership','Cooperation'],
-    'LessonPlans':       ['ID','TeacherID','SubjectID','Class','Topic','Objectives','TeachingAids','EntryBehaviour','PresentationSteps','Evaluation','Assignment','Week','Term','Session','Status','ApprovedByID','ApprovalNote','CreatedAt'],
-    'FeeStructure':      ['ID','ClassName','Section','Term','Session','TuitionFee','DevelopmentLevy','ExamFee','SportsFee','TotalFee','LineItems'],
-    'Bills':             ['ID','StudentID','StudentName','Class','Term','Session','TotalBilled','TotalPaid','Balance','Status','GeneratedDate','LastReminderDate'],
-    'Payments':          ['ID','BillID','StudentID','Term','Session','Amount','PaymentDate','Method','ReceiptRef','RecordedByID','EmailSent','Status','ProofOfPayment'],
-    'Expenses':          ['ID','Category','Description','Amount','Date','RecordedByID','Section'],
-    'AuditLogs':         ['ID','UserID','Action','Details','Timestamp'],
-    'Settings':          ['Key','Value'],
-    'PasswordRequests':  ['ID','Email','FullName','Role','Status','Timestamp']
-  };
+  return { success: true, message: 'Firebase backend: no sheet setup required.' };
+}
 
-  for (var name in schema) {
-    var sheet = ss.getSheetByName(name);
-    if (!sheet) {
-      sheet = ss.insertSheet(name);
-      sheet.getRange(1, 1, 1, schema[name].length).setValues([schema[name]]).setFontWeight('bold');
-      sheet.setFrozenRows(1);
-    } else {
-      var lastCol = sheet.getLastColumn();
-      var currentHeaders = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
-      var schemaHeaders = schema[name];
-      var headersUpdated = false;
-      for (var idx = 0; idx < schemaHeaders.length; idx++) {
-        if (idx >= currentHeaders.length || String(currentHeaders[idx]).trim() === '') {
-          sheet.getRange(1, idx + 1).setValue(schemaHeaders[idx]).setFontWeight('bold');
-          headersUpdated = true;
-        }
-      }
-      if (headersUpdated) {
-        SpreadsheetApp.flush();
-      }
-    }
-  }
-
-  // Seed default settings
-  var st = ss.getSheetByName('Settings');
-  if (st.getLastRow() <= 1) {
-    var defaults = [
-      ['school_name','My School'],['school_motto','Excellence in Education'],
-      ['school_logo_url',''],['principal_name','The Principal'],
-      ['head_teacher_name','The Head Teacher'],['current_term','First Term'],
-      ['current_session','2025/2026'],['next_term_begins',''],
-      ['subscription_plan','basic'],
-      ['institution_type','both'],
-      ['grade_a1_min','75'],['grade_b2_min','70'],['grade_b3_min','65'],
-      ['grade_c4_min','60'],['grade_c5_min','55'],['grade_c6_min','50'],
-      ['grade_d7_min','45'],['grade_e8_min','40']
-    ];
-    st.getRange(2, 1, defaults.length, 2).setValues(defaults);
-  }
-
-  // Seed default admin if database is completely empty
-  var us = ss.getSheetByName('Users');
-  if (us.getLastRow() <= 1) {
-    var seedSaltAdmin = generateSalt();
-    us.appendRow([generateId(),'System Administrator','admin@school.portal',
-      hashPassword('admin123', seedSaltAdmin),'admin','both','','','active','','',new Date().toISOString(),'',seedSaltAdmin]);
-  }
-
-  // Always ensure a developer account exists (crucial for existing installations)
-  var usersData = us.getDataRange().getValues();
-  var hasDeveloper = false;
-  for (var i = 1; i < usersData.length; i++) {
-    if (usersData[i][4] === 'developer' || usersData[i][2] === 'developer@school.portal') {
-      hasDeveloper = true;
-      break;
-    }
-  }
-  if (!hasDeveloper) {
-    var seedSaltDev = generateSalt();
-    us.appendRow([generateId(),'Portal Developer','developer@school.portal',
-      hashPassword('dev123', seedSaltDev),'developer','both','','','active','','',new Date().toISOString(),'',seedSaltDev]);
-  }
-
-  // Remove default Sheet1
-  var def = ss.getSheetByName('Sheet1');
-  if (def && ss.getSheets().length > 1) ss.deleteSheet(def);
-
-  // Seed standard Nigerian subjects
-  seedNigerianSubjects();
-
-  // Seed standard Nigerian classes
-  seedNigerianClasses();
-
-  // Setup Automated Backup
-  setupBackupTrigger();
-
-  return 'Setup complete! Admin login: admin@school.portal / admin123 (change this password immediately after first login!)';
 }
 
 // --- ID CARD HANDLERS ----------------------------------------
