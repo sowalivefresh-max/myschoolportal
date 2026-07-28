@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================
  *  MYSCHOOL PORTAL - Firebase.gs
  *  Firestore REST API Client for Google Apps Script
@@ -242,7 +242,8 @@ function firebaseGetAll(collection) {
   var results = [], pageToken = null;
   var baseUrl = getFirestoreBaseUrl() + '/' + collection;
   do {
-    var url = baseUrl + '?pageSize=300' + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
+    // Increased pageSize from 300 to 1000 to minimize HTTP requests (fetch more docs at once)
+    var url = baseUrl + '?pageSize=1000' + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
     var resp = UrlFetchApp.fetch(url, { method: 'get', headers: _fbHeaders(), muteHttpExceptions: true });
     if (resp.getResponseCode() !== 200)
       throw new Error('Firestore LIST [' + resp.getResponseCode() + ']: ' + resp.getContentText());
@@ -354,19 +355,62 @@ function firebaseBatchWrite(writes) {
 function firebaseCached(collection, ttlSeconds) {
   var cache = CacheService.getScriptCache();
   var key = 'FB_COL_' + collection;
+  
+  // Try to read chunked metadata first
+  var metaCached = cache.get(key + '_meta');
+  if (metaCached) {
+    try {
+      var meta = JSON.parse(metaCached);
+      var chunks = [];
+      for (var i = 0; i < meta.chunks; i++) {
+        var chunk = cache.get(key + '_chunk_' + i);
+        if (!chunk) throw new Error('Missing chunk');
+        chunks.push(chunk);
+      }
+      return JSON.parse(chunks.join(''));
+    } catch(e) {}
+  }
+  
+  // Try to read the old unchunked format for backwards compatibility
   var cached = cache.get(key);
   if (cached) { try { return JSON.parse(cached); } catch(e) {} }
+  
   var docs = firebaseGetAll(collection);
   try {
     var json = JSON.stringify(docs);
-    if (json.length < 100000) cache.put(key, json, ttlSeconds || 1800);
+    var chunkSize = 90000; // Keep under the strict 100KB limit
+    var numChunks = Math.ceil(json.length / chunkSize);
+    
+    // Only cache if it fits in a reasonable number of chunks (e.g. up to 1MB = ~11 chunks)
+    if (numChunks <= 15) {
+      for (var j = 0; j < numChunks; j++) {
+        cache.put(key + '_chunk_' + j, json.substring(j * chunkSize, (j + 1) * chunkSize), ttlSeconds || 1800);
+      }
+      cache.put(key + '_meta', JSON.stringify({ chunks: numChunks }), ttlSeconds || 1800);
+    } else {
+      // Fallback for very small strings
+      if (json.length < 100000) cache.put(key, json, ttlSeconds || 1800);
+    }
   } catch(e) {}
   return docs;
 }
 
 /** Invalidate a collection cache entry. */
 function clearFirebaseCache(collection) {
-  try { CacheService.getScriptCache().remove('FB_COL_' + collection); } catch(e) {}
+  try { 
+    var cache = CacheService.getScriptCache();
+    var key = 'FB_COL_' + collection;
+    
+    var metaCached = cache.get(key + '_meta');
+    if (metaCached) {
+      var meta = JSON.parse(metaCached);
+      for (var i = 0; i < meta.chunks; i++) {
+        cache.remove(key + '_chunk_' + i);
+      }
+      cache.remove(key + '_meta');
+    }
+    cache.remove(key);
+  } catch(e) {}
 }
 
 // --- CONNECTION TEST -----------------------------------------
