@@ -19,16 +19,22 @@
 
 function doGet(e) {
   try {
-    setupSheets(); // Ensure schema headers exist on page load
+    var token = e && e.parameter && e.parameter.token ? e.parameter.token : '';
+    if (token) {
+      var session = validateSession(token);
+      if (session) return serveDashboard(session.role, token);
+    }
+    return serveLogin();
   } catch(err) {
-    Logger.log('Auto setupSheets failed: ' + err);
+    Logger.log('doGet error: ' + err);
+    return HtmlService.createHtmlOutput(
+      '<html><body style="font-family:Arial;padding:40px;text-align:center;">'
+      + '<h2>Portal Temporarily Unavailable</h2>'
+      + '<p>The portal encountered an error loading. Please try again in a moment.</p>'
+      + '<p><small>Error: ' + err.message + '</small></p>'
+      + '</body></html>'
+    ).setTitle('Portal Error').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
-  var token = e && e.parameter && e.parameter.token ? e.parameter.token : '';
-  if (token) {
-    var session = validateSession(token);
-    if (session) return serveDashboard(session.role, token);
-  }
-  return serveLogin();
 }
 
 /**
@@ -322,7 +328,6 @@ function include(filename) {
 
 function loginUser(email, password) {
   try {
-    setupSheets(); // Ensures missing default accounts (like Developer) are seeded before auth
     var res = authenticate(email, password);
     if (res.success) {
       res.url = getDashboardUrl(res.token);
@@ -350,17 +355,21 @@ function getCurrentUser(token) {
   var u = getUserById(s.userId);
   if (!u) return { success: false, message: 'User not found.' };
 
-  // Dynamically find class assigned from the Classes sheet
+  // Find the class assigned to this user from the classes collection
   var assignedClass = u.classAssigned || '';
+  var classes = [];
+  var isClassTeacher = false;
   if (u.role === 'primary_teacher' || u.role === 'teacher' || u.role === 'headteacher' || u.role === 'principal' || u.role === 'vp') {
-    var classes = getAllClasses();
+    classes = getAllClasses();
     var cls = classes.find(function(c) { return String(c.classTeacherId || c.classTeacherID) === String(u.id); });
     if (cls) assignedClass = cls.className;
   }
 
-  var isClassTeacher = u.role === 'teacher' && !!classes && classes.some(function(c) {
-    return String(c.classTeacherId || c.classTeacherID) === String(u.id);
-  });
+  if (u.role === 'teacher' || u.role === 'primary_teacher') {
+    isClassTeacher = classes.some(function(c) {
+      return String(c.classTeacherId || c.classTeacherID) === String(u.id);
+    });
+  }
 
   var settings = getSettings();
   var isLocked = settings.portal_locked === 'true';
