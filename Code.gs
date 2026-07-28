@@ -355,36 +355,36 @@ function getCurrentUser(token) {
   var u = getUserById(s.userId);
   if (!u) return { success: false, message: 'User not found.' };
 
-  // Find the class assigned to this user from the classes collection
+  // Only load classes for roles that actually need class assignment info
   var assignedClass = u.classAssigned || '';
   var classes = [];
   var isClassTeacher = false;
-  if (u.role === 'primary_teacher' || u.role === 'teacher' || u.role === 'headteacher' || u.role === 'principal' || u.role === 'vp') {
+  var needsClassLookup = ['primary_teacher', 'teacher', 'headteacher', 'principal', 'vp'];
+  if (needsClassLookup.indexOf(u.role) !== -1) {
     classes = getAllClasses();
-    var cls = classes.find(function(c) { return String(c.classTeacherId || c.classTeacherID) === String(u.id); });
-    if (cls) assignedClass = cls.className;
-  }
-
-  if (u.role === 'teacher' || u.role === 'primary_teacher') {
-    isClassTeacher = classes.some(function(c) {
-      return String(c.classTeacherId || c.classTeacherID) === String(u.id);
+    var cls = classes.find(function(c) {
+      return String(c.classTeacherId || c.classTeacherID || '') === String(u.id);
     });
+    if (cls) assignedClass = cls.className;
+    if (u.role === 'teacher' || u.role === 'primary_teacher') {
+      isClassTeacher = !!cls;
+    }
   }
 
   var settings = getSettings();
   var isLocked = settings.portal_locked === 'true';
   if (!isLocked && settings.subscription_expiry) {
     var expiryDate = new Date(settings.subscription_expiry);
-    if (!isNaN(expiryDate.getTime()) && new Date() > expiryDate) {
-      isLocked = true;
-    }
+    if (!isNaN(expiryDate.getTime()) && new Date() > expiryDate) isLocked = true;
   }
 
-  return { success: true, user: { id: u.id, fullName: u.fullName, email: u.email,
+  return { success: true, user: {
+    id: u.id, fullName: u.fullName, email: u.email,
     role: u.role, section: u.section, classAssigned: assignedClass,
     isClassTeacher: isClassTeacher,
     profilePicture: u.profilePicture, phone: u.phone,
-    isLocked: isLocked, lockMessage: settings.lock_message } };
+    isLocked: isLocked, lockMessage: settings.lock_message
+  }};
 }
 
 function userUpdateProfile(token, data) {

@@ -214,13 +214,18 @@ function migrateSubjects() {
 
 function migrateEnrollments() {
   var rows = _getLegacyData('Enrollments');
+  // Old sheet columns: StudentID, SubjectID, Session, Term
   var migrated = 0, skipped = 0, writes = [];
   rows.forEach(function(r) {
     var id = String(r['iD'] || r['id'] || r['ID'] || '').trim();
     if (!id) { skipped++; return; }
-    var doc = { id: id, studentId: String(r['studentId'] || r['studentID'] || ''),
-      subjectId: String(r['subjectId'] || r['subjectID'] || ''),
-      session: String(r['session'] || ''), term: String(r['term'] || '') };
+    var doc = {
+      id: id,
+      studentId: String(r['studentId'] || r['StudentID'] || r['studentID'] || ''),
+      subjectId: String(r['subjectId'] || r['SubjectID'] || r['subjectID'] || ''),
+      session:   String(r['session']   || r['Session']   || ''),
+      term:      String(r['term']      || r['Term']      || '')
+    };
     writes.push({ type: 'set', collection: 'enrollments', docId: id, data: doc });
     migrated++;
     if (writes.length >= 499) { firebaseBatchWrite(writes); writes = []; }
@@ -231,22 +236,33 @@ function migrateEnrollments() {
 
 function migrateAssessments() {
   var rows = _getLegacyData('Assessments');
+  // Old sheet columns (PascalCase): ID, StudentID, StudentName, SubjectID, Class,
+  // Term, Session, CA1, CA2, CA3, Exam, Total, Grade, Position, TeacherComment, Locked, Submitted
   var migrated = 0, skipped = 0, writes = [];
   rows.forEach(function(r) {
     var id = String(r['iD'] || r['id'] || r['ID'] || '').trim();
     if (!id) { skipped++; return; }
-    var doc = { id: id,
-      studentId:   String(r['studentId']   || r['studentID'] || ''),
-      studentName: String(r['studentName'] || ''),
-      subjectId:   String(r['subjectId']   || r['subjectID'] || ''),
-      subjectName: String(r['subjectName'] || ''),
-      className:   String(r['className']   || r['class'] || ''),
-      term: String(r['term'] || ''), session: String(r['session'] || ''),
-      ca1: Number(r['ca1'] || 0), ca2: Number(r['ca2'] || 0),
-      ca3: Number(r['ca3'] || 0), exam: Number(r['exam'] || 0),
-      total: Number(r['total'] || 0), grade: String(r['grade'] || ''),
-      bonus: Number(r['bonus'] || 0), teacherComment: String(r['teacherComment'] || ''),
-      locked: String(r['locked'] || 'false'), published: String(r['published'] || 'false') };
+    var doc = {
+      id:             id,
+      studentId:      String(r['studentId']      || r['StudentID']      || r['studentID']      || ''),
+      studentName:    String(r['studentName']    || r['StudentName']    || ''),
+      subjectId:      String(r['subjectId']      || r['SubjectID']      || r['subjectID']      || ''),
+      subjectName:    String(r['subjectName']    || r['SubjectName']    || ''),
+      className:      String(r['className']      || r['ClassName']      || r['Class']          || r['class'] || ''),
+      term:           String(r['term']           || r['Term']           || ''),
+      session:        String(r['session']        || r['Session']        || ''),
+      ca1:   Number(r['ca1']   || r['CA1']   || 0),
+      ca2:   Number(r['ca2']   || r['CA2']   || 0),
+      ca3:   Number(r['ca3']   || r['CA3']   || 0),
+      exam:  Number(r['exam']  || r['Exam']  || 0),
+      total: Number(r['total'] || r['Total'] || 0),
+      grade:          String(r['grade']          || r['Grade']          || ''),
+      position:       Number(r['position']       || r['Position']       || 0),
+      bonus:          Number(r['bonus']          || r['Bonus']          || 0),
+      teacherComment: String(r['teacherComment'] || r['TeacherComment'] || ''),
+      locked:         String(r['locked']         || r['Locked']         || 'false'),
+      submitted:      String(r['submitted']      || r['Submitted']      || 'false')
+    };
     writes.push({ type: 'set', collection: 'assessments', docId: id, data: doc });
     migrated++;
     if (writes.length >= 499) { firebaseBatchWrite(writes); writes = []; }
@@ -257,15 +273,25 @@ function migrateAssessments() {
 
 function migratePsychomotor() {
   var rows = _getLegacyData('PsychomotorRecords');
+  // Old sheet columns: ID, StudentID, Class, Term, Session, Handwriting, SportSkills,
+  // Drawing, Creativity, Speaking, Attentiveness
   var migrated = 0, skipped = 0, writes = [];
   rows.forEach(function(r) {
     var id = String(r['iD'] || r['id'] || r['ID'] || '').trim();
     if (!id) { skipped++; return; }
-    var doc = { id: id, studentId: String(r['studentId'] || r['studentID'] || ''),
-      className: String(r['className'] || ''), term: String(r['term'] || ''), session: String(r['session'] || ''),
-      handwriting: String(r['handwriting'] || ''), sportSkills: String(r['sportSkills'] || ''),
-      drawing: String(r['drawing'] || ''), creativity: String(r['creativity'] || ''),
-      speaking: String(r['speaking'] || ''), attentiveness: String(r['attentiveness'] || '') };
+    var doc = {
+      id:            id,
+      studentId:     String(r['studentId']    || r['StudentID']     || r['studentID']     || ''),
+      className:     String(r['className']    || r['ClassName']     || r['Class']         || ''),
+      term:          String(r['term']         || r['Term']          || ''),
+      session:       String(r['session']      || r['Session']       || ''),
+      handwriting:   String(r['handwriting']  || r['Handwriting']   || ''),
+      sportSkills:   String(r['sportSkills']  || r['SportSkills']   || ''),
+      drawing:       String(r['drawing']      || r['Drawing']       || ''),
+      creativity:    String(r['creativity']   || r['Creativity']    || ''),
+      speaking:      String(r['speaking']     || r['Speaking']      || ''),
+      attentiveness: String(r['attentiveness']|| r['Attentiveness'] || '')
+    };
     writes.push({ type: 'set', collection: 'psychomotorRecords', docId: id, data: doc });
     migrated++;
     if (writes.length >= 499) { firebaseBatchWrite(writes); writes = []; }
@@ -276,15 +302,25 @@ function migratePsychomotor() {
 
 function migrateAffective() {
   var rows = _getLegacyData('AffectiveRecords');
+  // Old sheet columns: ID, StudentID, Class, Term, Session, Punctuality, Neatness,
+  // Politeness, Honesty, Leadership, Cooperation
   var migrated = 0, skipped = 0, writes = [];
   rows.forEach(function(r) {
     var id = String(r['iD'] || r['id'] || r['ID'] || '').trim();
     if (!id) { skipped++; return; }
-    var doc = { id: id, studentId: String(r['studentId'] || r['studentID'] || ''),
-      className: String(r['className'] || ''), term: String(r['term'] || ''), session: String(r['session'] || ''),
-      punctuality: String(r['punctuality'] || ''), neatness: String(r['neatness'] || ''),
-      politeness: String(r['politeness'] || ''), honesty: String(r['honesty'] || ''),
-      leadership: String(r['leadership'] || ''), cooperation: String(r['cooperation'] || '') };
+    var doc = {
+      id:          id,
+      studentId:   String(r['studentId']   || r['StudentID']   || r['studentID']   || ''),
+      className:   String(r['className']   || r['ClassName']   || r['Class']       || ''),
+      term:        String(r['term']        || r['Term']        || ''),
+      session:     String(r['session']     || r['Session']     || ''),
+      punctuality: String(r['punctuality'] || r['Punctuality'] || ''),
+      neatness:    String(r['neatness']    || r['Neatness']    || ''),
+      politeness:  String(r['politeness']  || r['Politeness']  || ''),
+      honesty:     String(r['honesty']     || r['Honesty']     || ''),
+      leadership:  String(r['leadership']  || r['Leadership']  || ''),
+      cooperation: String(r['cooperation'] || r['Cooperation'] || '')
+    };
     writes.push({ type: 'set', collection: 'affectiveRecords', docId: id, data: doc });
     migrated++;
     if (writes.length >= 499) { firebaseBatchWrite(writes); writes = []; }
