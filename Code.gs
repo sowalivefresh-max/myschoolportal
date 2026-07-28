@@ -1140,9 +1140,8 @@ function setupSheets() {
   return { success: true, message: 'Firebase backend: no sheet setup required.' };
 }
 
-}
-
 // --- ID CARD HANDLERS ----------------------------------------
+
 
 function parentGenerateIDCard(token, studentId) {
   var session = validateSession(token);
